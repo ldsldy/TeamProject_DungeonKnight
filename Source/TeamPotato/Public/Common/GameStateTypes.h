@@ -27,14 +27,8 @@ USTRUCT(BlueprintType)
 struct FLevelData
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EGameState GameState = EGameState::None;
-
-	// 로드할 레벨의 경로
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName LevelName;
 	
+	// 로드할 레벨 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UWorld> LevelAsset;
 

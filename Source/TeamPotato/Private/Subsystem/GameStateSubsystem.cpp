@@ -49,41 +49,6 @@ void UGameStateSubsystem::SetGameState(EGameState NewState)
 	OnGameStateChanged.Broadcast(OldState, NewState);
 }
 
-void UGameStateSubsystem::TravelToLobby()
-{
-	TravelToState(EGameState::Lobby);
-}
-
-void UGameStateSubsystem::TravelToMainMenu()
-{
-	TravelToState(EGameState::MainMenu);
-}
-
-void UGameStateSubsystem::TravelToChapter(int32 ChapterIndex)
-{
-	EGameState TargetState = EGameState::None;
-
-    UE_LOG(LogTemp, Log, TEXT("TravelToChapter called with ChapterIndex: %d"), ChapterIndex);
-
-	switch (ChapterIndex)
-	{
-	case 0:
-		TargetState = EGameState::Chapter1;
-		break;
-	case 1:
-		TargetState = EGameState::Chapter2;
-		break;
-	case 2:
-		TargetState = EGameState::Chapter3;
-		break;
-	default:
-		UE_LOG(LogTemp, Warning, TEXT("Invalid chapter index: %d"), ChapterIndex);
-		return;
-	}
-
-	TravelToState(TargetState);
-}
-
 void UGameStateSubsystem::TravelToState(EGameState TargetState)
 {
     if (!LevelDataAsset) return;
@@ -91,14 +56,14 @@ void UGameStateSubsystem::TravelToState(EGameState TargetState)
     FLevelData LevelData;
     if (LevelDataAsset->GetLevelDataByState(TargetState, LevelData))
     {
-        ExecuteLevelTravel(LevelData);
+        ExecuteLevelTravel(TargetState, LevelData);
     }
 }
 
 
 // TSoftObjectPtr<UWorld> => 에셋 경로와 타입을 나타내는 약한 참조
 // FSoftObjectPath => 에셋 경로를 문자열로 나타냄
-void UGameStateSubsystem::ExecuteLevelTravel(const FLevelData& LevelData)
+void UGameStateSubsystem::ExecuteLevelTravel(EGameState TargetState, const FLevelData& LevelData)
 {
     UUserWidget* LoadingScreen = nullptr;
 
@@ -113,7 +78,7 @@ void UGameStateSubsystem::ExecuteLevelTravel(const FLevelData& LevelData)
     }
     
     // 게임 상태 변경
-	SetGameState(LevelData.GameState);
+	SetGameState(TargetState);
 
 	if (!LevelData.LevelAsset.IsNull())
 	{
@@ -141,6 +106,6 @@ void UGameStateSubsystem::ExecuteLevelTravel(const FLevelData& LevelData)
 	}
 	else 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("LevelData for state %d has no valid level asset or name."), static_cast<int32>(LevelData.GameState));
+		UE_LOG(LogTemp, Warning, TEXT("LevelData for state %d has no valid level asset."), static_cast<int32>(TargetState));
 	}
 }

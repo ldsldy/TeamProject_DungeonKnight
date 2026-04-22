@@ -5,26 +5,12 @@
 
 bool ULevelDataAsset::GetLevelDataByState(EGameState State, FLevelData& OutLevelData) const
 {
-	for (const FLevelData& Level : Levels)
+	const FLevelData* FoundLevelData = LevelsByState.Find(State);
+	if (!FoundLevelData)
 	{
-		if(Level.GameState == State)
-		{
-			OutLevelData = Level;
-			return true;
-		}
+		return false;
 	}
-	return false;
-}
 
-bool ULevelDataAsset::GetLevelDataByName(FName LevelName, FLevelData& OutLevelData) const
-{
-	for (const FLevelData& Level : Levels)
-	{
-		if (Level.LevelName == LevelName)
-		{
-			OutLevelData = Level;
-			return true;
-		}
-	}
-	return false;
+	OutLevelData = *FoundLevelData;
+	return true;
 }

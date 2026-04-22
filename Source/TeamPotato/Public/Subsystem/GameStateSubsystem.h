@@ -40,19 +40,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game State")
 	void TravelToState(EGameState TargetState);
 
-	UFUNCTION(BlueprintCallable, Category = "Game State")
-	void TravelToLobby();
-
-	UFUNCTION(BlueprintCallable, Category = "Game State")
-	void TravelToMainMenu();
-
-	UFUNCTION(BlueprintCallable, Category = "Game State")
-	void TravelToChapter(int32 ChapterIndex);
-
 	// =============================================================================
 	// Setter / Getter
 	// =============================================================================
-	ULevelDataAsset* GetLevelDdataAsset() const { return LevelDataAsset; }
+	ULevelDataAsset* GetLevelDataAsset() const { return LevelDataAsset; }
 
 	// =============================================================================
 	// 델리게이트
@@ -61,7 +52,7 @@ public:
 
 private:
 	// 실제 레벨 이동 처리
-	void ExecuteLevelTravel(const FLevelData& LevelData);
+	void ExecuteLevelTravel(EGameState TargetState, const FLevelData& LevelData);
 
 private:
 	UPROPERTY()

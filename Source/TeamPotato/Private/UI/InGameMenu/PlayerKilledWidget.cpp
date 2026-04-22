@@ -18,6 +18,6 @@ void UPlayerKilledWidget::OnRestartButtonClicked()
     UE_LOG(LogTemp, Warning, TEXT("Restart Button Clicked - Traveling to Lobby"));
     if (UGameStateSubsystem* GameStateSubsystem = GetGameInstance()->GetSubsystem<UGameStateSubsystem>())
     {
-        GameStateSubsystem->TravelToLobby();
+        GameStateSubsystem->TravelToState(EGameState::Lobby);
     }
 }

@@ -67,7 +67,7 @@ void UMainMenuWidget::OnNewGameClicked()
 	{
 		if (UGameStateSubsystem* GameStateSubsystem = GI->GetSubsystem<UGameStateSubsystem>())
 		{
-			GameStateSubsystem->TravelToLobby();
+			GameStateSubsystem->TravelToState(EGameState::Lobby);
 		}
 	}
 }

@@ -17,14 +17,11 @@ class TEAMPOTATO_API ULevelDataAsset : public UPrimaryDataAsset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
-	TArray<FLevelData> Levels;
+	TMap<EGameState, FLevelData> LevelsByState;
 
 	// ===================================================
 	// 레벨 데이터 검색 함수들
 	// ===================================================
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	bool GetLevelDataByState(EGameState State, FLevelData& OutLevelData) const;
-
-	UFUNCTION(BlueprintCallable, Category = "Level Data")
-	bool GetLevelDataByName(FName LevelName, FLevelData& OutLevelData) const;
 };

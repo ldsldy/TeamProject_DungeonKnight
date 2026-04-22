@@ -114,13 +114,13 @@ void UInGameMenuWidget::OnQuitButtonClicked()
 // 게임 포기 확인 시 호출될 함수
 void UInGameMenuWidget::OnConfirmGiveUp()
 {
-    GetGameInstance()->GetSubsystem<UGameStateSubsystem>()->TravelToLobby();
+    GetGameInstance()->GetSubsystem<UGameStateSubsystem>()->TravelToState(EGameState::Lobby);
 }
 
 // 게임 종료 확인 시 호출될 함수
 void UInGameMenuWidget::OnConfirmQuit()
 {
-    GetGameInstance()->GetSubsystem<UGameStateSubsystem>()->TravelToMainMenu();
+    GetGameInstance()->GetSubsystem<UGameStateSubsystem>()->TravelToState(EGameState::MainMenu);
 }
 
 void UInGameMenuWidget::OnBackToPauseClicked()
