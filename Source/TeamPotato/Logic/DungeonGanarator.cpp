@@ -12,6 +12,7 @@
 #include "Enemy/EnemyCharacter.h"
 #include "Item/Weapon/WeaponBoxActor.h"
 #include "Subsystem/MVVMSubsystem.h"
+#include "Subsystem/GameStateSubsystem.h"
 #include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
@@ -292,6 +293,11 @@ void ADungeonGanarator::AfterEndedSpawnNomalRooms()
     // 스테이지 및 챕터 변경 델리게이트 호출
     OnStageAndChapterChanged.Broadcast(Stage, chapter);
 
+    if (UGameStateSubsystem* GameStateSubsystem = UGameStateSubsystem::Get(this))
+    {
+        GameStateSubsystem->NotifyDungeonReadyToWarmup();
+    }
+
 }
 
 //닫힌 벽 막는 함수
@@ -564,6 +570,13 @@ void ADungeonGanarator::GoToNextStage(int32 NewChapter)
     {
         chapter++;
     }
+
+    if (UGameStateSubsystem* GameStateSubsystem = UGameStateSubsystem::Get(this))
+    {
+        // 같은 레벨에서 던전 재생성할 때도 로딩 게이트를 사용
+        GameStateSubsystem->BeginLoadingGate(true, true);
+    }
+
     ResetDungeon();
 }
 

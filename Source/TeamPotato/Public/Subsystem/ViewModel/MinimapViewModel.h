@@ -41,6 +41,9 @@ public:
     UFUNCTION(BlueprintPure)
     UMaterialInstanceDynamic* GetMinimapMaterial() const;
 
+    // SceneCapture 바인딩이 늦게 일어난 경우를 위해 마지막 캡처 요청을 재전송
+    void ReplayLastMinimapCaptureRequest();
+
 public:
     // --- 미니맵 캡처 요청 델리게이트 ---
     UPROPERTY(BlueprintAssignable)
@@ -53,4 +56,8 @@ public:
 private:
     UPROPERTY()
     TObjectPtr<UMinimapManager> MinimapManager = nullptr;
+
+    bool bHasLastCaptureBounds = false;
+    FVector2D LastCaptureMinPoint = FVector2D::ZeroVector;
+    FVector2D LastCaptureMaxPoint = FVector2D::ZeroVector;
 };

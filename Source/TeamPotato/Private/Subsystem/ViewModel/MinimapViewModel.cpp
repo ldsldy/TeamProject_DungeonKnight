@@ -8,10 +8,24 @@
 // --- 맵 생성시에 미니맵 캡처 요청 함수 ---
 void UMinimapViewModel::RequestMinimapCapture(FVector2D InMinPoint, FVector2D InMaxPoint)
 {
+    LastCaptureMinPoint = InMinPoint;
+    LastCaptureMaxPoint = InMaxPoint;
+    bHasLastCaptureBounds = true;
+
     if (OnMinimapCaptureRequested.IsBound())
     {
         OnMinimapCaptureRequested.Broadcast(InMinPoint, InMaxPoint);
     }
+}
+
+void UMinimapViewModel::ReplayLastMinimapCaptureRequest()
+{
+    if (!bHasLastCaptureBounds || !OnMinimapCaptureRequested.IsBound())
+    {
+        return;
+    }
+
+    OnMinimapCaptureRequested.Broadcast(LastCaptureMinPoint, LastCaptureMaxPoint);
 }
 
 // --- 미니맵 매니저에서 머티리얼의 플레이어 위치 업데이트 함수 ---

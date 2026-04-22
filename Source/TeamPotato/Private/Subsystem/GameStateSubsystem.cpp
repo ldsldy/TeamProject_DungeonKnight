@@ -7,120 +7,268 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/AssetManager.h"
 #include "Blueprint/UserWidget.h"
+#include "ContentStreaming.h"
+#include "ShaderPipelineCache.h"
+#include "Engine/Engine.h"
+#include "UObject/UObjectGlobals.h"
 
 UGameStateSubsystem* UGameStateSubsystem::Get(const UObject* WorldContextObject)
 {
-	if (GEngine)
-	{
-		// 월드 컨텍스트 객체에서 UWorld를 가져오기를 시도하고 실패하면 어설트 모드로 처리합니다.
-		// 우아한 종료는 하고 있던 작업을 적절히 정리하고 종료하는 것입니다. 반대로 어설트는 즉시 종료하는 것입니다.
-		UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::Assert);
+    if (!WorldContextObject || !GEngine)
+    {
+        return nullptr;
+    }
 
-		// 월드가 유효하다면, 게임 인스턴스에서 UGameStateSubsystem을 가져옵니다.
-		return UGameInstance::GetSubsystem<UGameStateSubsystem>(World->GetGameInstance());
-	}
+    UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::ReturnNull);
+    if (!World)
+    {
+        return nullptr;
+    }
 
-	return nullptr;
+    UGameInstance* GameInstance = World->GetGameInstance();
+    return GameInstance ? GameInstance->GetSubsystem<UGameStateSubsystem>() : nullptr;
 }
 
 void UGameStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Super::Initialize(Collection);
+    Super::Initialize(Collection);
 
-	if (const UMyGameSettings* Settings = UMyGameSettings::Get())
-	{
-		if (!Settings->LevelDataAsset.IsNull())
-		{
-			// 레벨 데이터 에셋 로드
-			LevelDataAsset = Settings->LevelDataAsset.LoadSynchronous();
+    if (const UMyGameSettings* Settings = UMyGameSettings::Get())
+    {
+        if (!Settings->LevelDataAsset.IsNull())
+        {
+            LevelDataAsset = Settings->LevelDataAsset.LoadSynchronous();
+            UE_LOG(LogTemp, Log, TEXT("GameStateSubsystem: LevelDataAsset loaded successfully."));
+        }
 
-			UE_LOG(LogTemp, Log, TEXT("GameStateSubsystem: LevelDataAsset loaded successfully."));
-		}
-		SetGameState(Settings->DefaultStartState);
+        SetGameState(Settings->DefaultStartState);
 
         if (!Settings->LoadingWidgetClass.IsNull())
         {
-            // 로딩 화면 위젯 로드
             LoadingWidget = Settings->LoadingWidgetClass.LoadSynchronous();
         }
-	}
+    }
+
+	// 맵 로드 완료 시점을 알기 위해 PostLoadMapWithWorld 델리게이트에 바인딩
+    FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UGameStateSubsystem::HandlePostLoadMap);
 }
 
 void UGameStateSubsystem::Deinitialize()
 {
-	Super::Deinitialize();
+    ForceEndLoadingGate();
+
+    FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
+
+    Super::Deinitialize();
 }
 
 void UGameStateSubsystem::SetGameState(EGameState NewState)
 {
-	if (CurrentGameState == NewState) return;
+    if (CurrentGameState == NewState) return;
 
-	// 새로운 상태로 변경
-	EGameState OldState = CurrentGameState;
-	CurrentGameState = NewState;
+    EGameState OldState = CurrentGameState;
+    CurrentGameState = NewState;
 
     UE_LOG(LogTemp, Log, TEXT("Game state changed from %d to %d"), static_cast<int32>(OldState), static_cast<int32>(NewState));
-
-	OnGameStateChanged.Broadcast(OldState, NewState);
+    OnGameStateChanged.Broadcast(OldState, NewState);
 }
 
-void UGameStateSubsystem::TravelToState(EGameState TargetState)
+void UGameStateSubsystem::TravelToState(EGameState TargetState, bool bCreateLoadingWidget)
 {
-    if (!LevelDataAsset) return;
+    if (!LevelDataAsset)
+    {
+        return;
+    }
 
     FLevelData LevelData;
     if (LevelDataAsset->GetLevelDataByState(TargetState, LevelData))
     {
-        ExecuteLevelTravel(TargetState, LevelData);
+        ExecuteLevelTravel(TargetState, LevelData, bCreateLoadingWidget);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("TravelToState failed: state %d is not configured in LevelDataAsset."), static_cast<int32>(TargetState));
     }
 }
 
-
-// TSoftObjectPtr<UWorld> => 에셋 경로와 타입을 나타내는 약한 참조
-// FSoftObjectPath => 에셋 경로를 문자열로 나타냄
-void UGameStateSubsystem::ExecuteLevelTravel(EGameState TargetState, const FLevelData& LevelData)
+void UGameStateSubsystem::BeginLoadingGate(bool bCreateLoadingWidget, bool bWaitForDungeonReady)
 {
-    UUserWidget* LoadingScreen = nullptr;
-
-    // 로딩 화면 표시
-    if (LoadingWidget)
+    if (!bCreateLoadingWidget)
     {
-        LoadingScreen = CreateWidget<UUserWidget>(GetWorld(), LoadingWidget.Get());
-        if (LoadingScreen)
-        {
-            LoadingScreen->AddToViewport();
-        }
+        ForceEndLoadingGate();
+        return;
     }
-    
-    // 게임 상태 변경
-	SetGameState(TargetState);
 
-	if (!LevelData.LevelAsset.IsNull())
-	{
-		//UE_LOG(LogTemp, Log, TEXT("Traveling to level: %s"), *LevelData.LevelAsset.GetAssetName());
-        UE_LOG(LogTemp, Log, TEXT("Level asset path: %s"), *LevelData.LevelAsset.ToSoftObjectPath().ToString());
+    if (LoadingWidget.IsNull())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BeginLoadingGate skipped: LoadingWidgetClass is not set."));
+        return;
+    }
 
-		FString LevelPath = LevelData.LevelAsset.GetAssetName();
+    if (!ActiveLoadingScreen)
+    {
+        ActiveLoadingScreen = CreateWidget<UUserWidget>(GetGameInstance(), LoadingWidget.Get());
+        if (!ActiveLoadingScreen)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("BeginLoadingGate failed: could not create loading widget."));
+            return;
+        }
+        ActiveLoadingScreen->AddToViewport(1000);
+    }
 
-		// OpenLevel과 비동기 맵 에셋 로드 이용
-        TSoftObjectPtr<UWorld> LevelToLoad = LevelData.LevelAsset;
-        // 비동기 에셋 로드 매니저(에셋 로드 요청, 완료 후 콜백)
-        FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-        // 비동기 로드 요청 (로드할 레벨 경로, 로드 완료 후의 콜백) (현재 레벨 유지하다가 로드 완료 후 전환)
-        Streamable.RequestAsyncLoad(LevelToLoad.ToSoftObjectPath(), FStreamableDelegate::CreateLambda([this, LevelPath, LoadingScreen]()
-            {
-                // 로드 완료했다면 로딩 화면 제거
-                if (LoadingScreen)
-                {
-                    LoadingScreen->RemoveFromParent();
-                }
+    bWaitingForPostLoadMap = false;
+    bWaitingDungeonReadySignal = bWaitForDungeonReady;
+    StableReadyFrameCount = 0;
+    LoadingScreenShownAtSeconds = FPlatformTime::Seconds();
 
-                // 레벨 전환
-                UGameplayStatics::OpenLevel(GetWorld(), FName(*LevelPath));
-            }));
-	}
-	else 
-	{
-		UE_LOG(LogTemp, Warning, TEXT("LevelData for state %d has no valid level asset."), static_cast<int32>(TargetState));
-	}
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(LoadingGateTimerHandle);
+        World->GetTimerManager().SetTimer(
+            LoadingGateTimerHandle,
+            this,
+            &UGameStateSubsystem::TickLoadingGate,
+            1.0f / 60.0f,
+            true);
+    }
+}
+
+void UGameStateSubsystem::NotifyDungeonReadyToWarmup()
+{
+    if (!ActiveLoadingScreen)
+    {
+        return;
+    }
+
+    bWaitingDungeonReadySignal = false;
+}
+
+void UGameStateSubsystem::ForceEndLoadingGate()
+{
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(LoadingGateTimerHandle);
+    }
+
+    if (ActiveLoadingScreen)
+    {
+        ActiveLoadingScreen->RemoveFromParent();
+        ActiveLoadingScreen = nullptr;
+    }
+
+    bWaitingForPostLoadMap = false;
+    bWaitingDungeonReadySignal = false;
+    StableReadyFrameCount = 0;
+}
+
+void UGameStateSubsystem::ExecuteLevelTravel(EGameState TargetState, const FLevelData& LevelData, bool bCreateLoadingWidget)
+{
+    SetGameState(TargetState);
+
+    if (bCreateLoadingWidget)
+    {
+        // 일반 레벨 이동은 던전 완료 신호를 강제하지 않고 스트리밍/PSO 안정화 기준으로 닫음
+        BeginLoadingGate(true, false);
+        bWaitingForPostLoadMap = true;
+    }
+    else
+    {
+        ForceEndLoadingGate();
+    }
+
+    if (LevelData.LevelAsset.IsNull())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("LevelData for state %d has no valid level asset."), static_cast<int32>(TargetState));
+        if (bCreateLoadingWidget)
+        {
+            // 로딩 위젯을 생성했지만 레벨 데이터가 유효하지 않은 경우, 로딩 게이트를 강제로 닫음
+            ForceEndLoadingGate();
+        }
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Level asset path: %s"), *LevelData.LevelAsset.ToSoftObjectPath().ToString());
+
+    const FString LevelPath = LevelData.LevelAsset.GetAssetName();
+    TSoftObjectPtr<UWorld> LevelToLoad = LevelData.LevelAsset;
+    FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+
+    Streamable.RequestAsyncLoad(
+        LevelToLoad.ToSoftObjectPath(),
+        FStreamableDelegate::CreateLambda([this, LevelPath]()
+        {
+            UGameplayStatics::OpenLevel(GetWorld(), FName(*LevelPath));
+        }));
+}
+
+void UGameStateSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
+{
+    if (!LoadedWorld || !ActiveLoadingScreen)
+    {
+        return;
+    }
+
+    bWaitingForPostLoadMap = false;
+    StableReadyFrameCount = 0;
+    LoadingScreenShownAtSeconds = FPlatformTime::Seconds();
+    LoadedWorld->GetTimerManager().ClearTimer(LoadingGateTimerHandle);
+    LoadedWorld->GetTimerManager().SetTimer(
+        LoadingGateTimerHandle,
+        this,
+        &UGameStateSubsystem::TickLoadingGate,
+        1.0f / 60.0f,
+        true);
+}
+
+void UGameStateSubsystem::TickLoadingGate()
+{
+    if (!ActiveLoadingScreen)
+    {
+        ForceEndLoadingGate();
+        return;
+    }
+
+    if (bWaitingForPostLoadMap)
+    {
+        return;
+    }
+
+    const double Now = FPlatformTime::Seconds();
+
+    // 로딩 화면이 최소한으로 보여질 시간 동안은 던전 준비 신호와 스트리밍/PSO 상태에 관계없이 기다림
+    if ((Now - LoadingScreenShownAtSeconds) < MinLoadingScreenSeconds)
+    {
+        return;
+    }
+
+    if (bWaitingDungeonReadySignal)
+    {
+        if ((Now - LoadingScreenShownAtSeconds) < DungeonReadyTimeoutSeconds)
+        {
+            return;
+        }
+
+        // 완료 신호가 오지 않아도 타임아웃 이후에는 진행
+        bWaitingDungeonReadySignal = false;
+    }
+
+    const int32 RemainingStreamingRequests = IStreamingManager::Get().BlockTillAllRequestsFinished(0.0f, false); // 남아있는 스트리밍 요청 수를 가져옴
+    const bool bStreamingDone = (RemainingStreamingRequests == 0); // 스트리밍이 완료되었는지 확인
+    const bool bPSOPrecacheDone = (FShaderPipelineCache::NumPrecompilesRemaining() == 0); // PSO 프리캐시가 완료되었는지 확인
+
+    if (bStreamingDone && bPSOPrecacheDone)
+    {
+        // 스트리밍과 PSO 프리캐시가 모두 완료된 경우 안정적으로 준비된 상태로 간주하기 위해 카운터 증가, 그렇지 않으면 카운터 초기화
+        ++StableReadyFrameCount;
+    }
+    else
+    {
+        StableReadyFrameCount = 0; // 스트리밍 또는 PSO 프리캐시가 완료되지 않은 경우 카운터 초기화
+    }
+
+    if (StableReadyFrameCount >= RequiredStableReadyFrames)
+    {
+        // 스트리밍과 PSO 프리캐시가 모두 완료되고 안정적으로 준비된 상태로 간주하기 위해 필요한 연속 프레임 수를 충족한 경우 로딩 종료
+        ForceEndLoadingGate();
+    }
 }

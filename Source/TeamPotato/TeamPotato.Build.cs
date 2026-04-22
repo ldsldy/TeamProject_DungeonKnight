@@ -10,7 +10,7 @@ public class TeamPotato : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { 
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "GameplayTasks", "NavigationSystem",
-			"Niagara", "UMG", "SlateCore", "Slate", "DeveloperSettings",
+			"Niagara", "UMG", "SlateCore", "Slate", "DeveloperSettings", "RenderCore", "RHI",
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

@@ -25,7 +25,6 @@ void AMinimapSceneCapture2D::BeginPlay()
         if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
         {
             MinimapViewModel = Subsystem->GetMinimapViewModel();
-            MinimapViewModel->OnMinimapCaptureRequested.AddDynamic(this, &AMinimapSceneCapture2D::OnMinimapCapture);
         }
     }
 
@@ -34,10 +33,31 @@ void AMinimapSceneCapture2D::BeginPlay()
     {
         MinimapManager = NewObject<UMinimapManager>(this);
     }
+
+    if (MinimapViewModel)
+    {
+        MinimapViewModel->OnMinimapCaptureRequested.RemoveDynamic(this, &AMinimapSceneCapture2D::OnMinimapCapture);
+        MinimapViewModel->OnMinimapCaptureRequested.AddDynamic(this, &AMinimapSceneCapture2D::OnMinimapCapture);
+        MinimapViewModel->ReplayLastMinimapCaptureRequest();
+    }
 }
 
 void AMinimapSceneCapture2D::OnMinimapCapture(FVector2D InMinPoint, FVector2D InMaxPoint)
 {
+    if (!CaptureComp)
+    {
+        return;
+    }
+
+    if (!MinimapManager)
+    {
+        MinimapManager = NewObject<UMinimapManager>(this);
+        if (!MinimapManager)
+        {
+            return;
+        }
+    }
+
     // 던전 촬영 위치 설정
     WorldMinPoint = InMinPoint;
     WorldMaxPoint = InMaxPoint;
