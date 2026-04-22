@@ -13,11 +13,13 @@ void UMainHUDWidget::InitializeViewModels(UMVVMSubsystem* Subsystem)
 {
     if (!Subsystem) return;
 
+    UPlayerResourceViewModel* ResourceViewModel = Subsystem->GetPlayerStatusViewModel();
+
     // 위젯들에 뷰모델 세팅(이제 위젯은 뷰모델을 알게 된다)
     if (PlayerStatPanel)
     {
         UE_LOG(LogTemp, Warning, TEXT("UMainHUDWidget::InitializeViewModels - Setting PlayerStatPanel ViewModel"));
-        PlayerStatPanel->SetViewModel(Subsystem->GetPlayerStatusViewModel());
+        PlayerStatPanel->SetViewModel(ResourceViewModel);
     }
     if (InventoryPerkPanel)
     {
@@ -25,11 +27,11 @@ void UMainHUDWidget::InitializeViewModels(UMVVMSubsystem* Subsystem)
     }
     if (PlayerWeaponPanel)
     {
-        PlayerWeaponPanel->SetViewModel(Subsystem->GetWeaponViewModel());
+        PlayerWeaponPanel->SetViewModel(Subsystem->GetWeaponViewModel(), ResourceViewModel);
     }
     if (PlayerGoldPanel)
     {
-        PlayerGoldPanel->SetViewModel(Subsystem->GetItemViewModel());
+        PlayerGoldPanel->SetViewModel(ResourceViewModel);
     }
     if (BossWidget)
     {

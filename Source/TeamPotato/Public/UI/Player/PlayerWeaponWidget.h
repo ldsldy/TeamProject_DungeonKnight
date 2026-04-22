@@ -10,6 +10,7 @@ class UTextBlock;
 class UImage;
 class UProgressBar;
 class UWeaponViewModel;
+class UPlayerResourceViewModel;
 class UWeaponDataAsset;
 /**
  * 
@@ -21,7 +22,7 @@ class TEAMPOTATO_API UPlayerWeaponWidget : public UUserWidget
 	
 public:
     UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UWeaponViewModel* InViewModel);
+    void SetViewModel(UWeaponViewModel* InWeaponViewModel, UPlayerResourceViewModel* InResourceViewModel);
 
 protected:
     virtual void NativeConstruct() override;
@@ -35,6 +36,9 @@ private:
     // 플레이어에게 있는 무기 공격 가능 자원 변경 함수
     UFUNCTION()
     void UpdatePlayerResourceBar(float CurrentResource, float MaxResource);
+
+    UFUNCTION()
+    void HandleResourceFieldChanged(FName FieldName);
 
     // 플레이어의 메인 무기 정보 변경 함수 (데이터 에셋 혹은 테이블도 생각)
      UFUNCTION()
@@ -68,6 +72,9 @@ protected:
 private:
     UPROPERTY()
     TObjectPtr<UWeaponViewModel> WeaponViewModel;
+
+    UPROPERTY()
+    TObjectPtr<UPlayerResourceViewModel> PlayerResourceViewModel;
 
     bool bIsViewModelBound = false;
 };

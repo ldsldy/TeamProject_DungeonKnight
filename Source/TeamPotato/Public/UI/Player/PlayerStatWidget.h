@@ -10,9 +10,8 @@
  * 
  */
 class UProgressBar;
-class UImage;
 class UTextBlock;
-class UPlayerStatusViewModel;
+class UPlayerResourceViewModel;
 
 UCLASS()
 class TEAMPOTATO_API UPlayerStatWidget : public UUserWidget
@@ -22,7 +21,7 @@ class TEAMPOTATO_API UPlayerStatWidget : public UUserWidget
 public:
     // 외부에서 ViewModel 주입
     UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UPlayerStatusViewModel* InViewModel);
+    void SetViewModel(UPlayerResourceViewModel* InViewModel);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -34,10 +33,9 @@ private:
 
 	/// --- 뷰모델 바인딩 함수 ---
 	UFUNCTION()
-	void SetPlayerHealthBar(float NewHealthPercent, FText NewHealthText);
+	void HandleViewModelFieldChanged(FName FieldName);
 
-	UFUNCTION()
-	void SetPlayerIcon(UTexture2D* NewPlayerIcon);
+    void RefreshHealthUI();
 
     UFUNCTION()
     void UpdatePlayerDelayBar();
@@ -76,17 +74,13 @@ protected:
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UProgressBar> DelayProgressBar;
 
-	// --- 플레이어의 아이콘 이미지 ---
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
-	TObjectPtr<UImage> PlayerIconImage;
-
     UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
     TObjectPtr<UTextBlock> HealthText;
 
 private:
     // --- 플레이어 상태 뷰모델 ---
 	UPROPERTY()
-	TObjectPtr<UPlayerStatusViewModel> PlayerStatusViewModel;
+	TObjectPtr<UPlayerResourceViewModel> PlayerStatusViewModel;
 
     // 중복 바인딩 방지 플래그
     bool bIsViewModelBound = false;

@@ -8,7 +8,7 @@
 
 
 class UTextBlock;
-class UItemViewModel;
+class UPlayerResourceViewModel;
 /**
  * 
  */
@@ -19,7 +19,7 @@ class TEAMPOTATO_API UPlayerGoldWidget : public UUserWidget
 	
 public:
     UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UItemViewModel* InViewModel);
+    void SetViewModel(UPlayerResourceViewModel* InViewModel);
 
 protected:
     virtual void NativeConstruct() override;
@@ -31,7 +31,9 @@ private:
 
     /// --- 뷰모델 바인딩 함수 ---
     UFUNCTION()
-    void UpdatePlayerGold(int32 NewGoldAmount);
+    void HandleViewModelFieldChanged(FName FieldName);
+
+    void UpdatePlayerGold();
     
     ///=================================================
     ///==================== 변수 ======================= 
@@ -41,9 +43,9 @@ protected:
     TObjectPtr<UTextBlock> PlayerGoldText;
 
 private:
-    // --- 골드 변화를 알려줄 아이템 뷰모델 ---
+    // --- 골드 변화를 알려줄 플레이어 리소스 뷰모델 ---
     UPROPERTY()
-    TObjectPtr<UItemViewModel> ItemViewModel;
+    TObjectPtr<UPlayerResourceViewModel> PlayerResourceViewModel;
 
     bool bIsViewModelBound = false;
 };

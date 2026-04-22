@@ -6,6 +6,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 
 void UPlayerWeaponWidget::NativeConstruct()
 {
@@ -62,33 +63,60 @@ void UPlayerWeaponWidget::UpdateSubWeaponInfo(UWeaponDataAsset* InDataAsset)
     }
 }
 
-void UPlayerWeaponWidget::SetViewModel(UWeaponViewModel* InViewModel)
+void UPlayerWeaponWidget::SetViewModel(UWeaponViewModel* InWeaponViewModel, UPlayerResourceViewModel* InResourceViewModel)
 {
     UnbindViewModel();
-    WeaponViewModel = InViewModel;
+    WeaponViewModel = InWeaponViewModel;
+    PlayerResourceViewModel = InResourceViewModel;
     BindViewModel();
 }
 
 void UPlayerWeaponWidget::BindViewModel()
 {
     // 이미 바인딩된 경우 무시
-    if (WeaponViewModel && !bIsViewModelBound)
+    if (WeaponViewModel && PlayerResourceViewModel && !bIsViewModelBound)
     {
         // Model -> ViewModel 바인딩
-        WeaponViewModel->OnPlayerResourceUpdate.AddDynamic(this, &UPlayerWeaponWidget::UpdatePlayerResourceBar);
         WeaponViewModel->OnMainWeaponUpdate.AddDynamic(this, &UPlayerWeaponWidget::UpdateMainWeaponInfo);
         WeaponViewModel->OnSubWeaponUpdate.AddDynamic(this, &UPlayerWeaponWidget::UpdateSubWeaponInfo);
+        PlayerResourceViewModel->OnFieldChanged.AddDynamic(this, &UPlayerWeaponWidget::HandleResourceFieldChanged);
 
         bIsViewModelBound = true;
+
+        UpdatePlayerResourceBar(PlayerResourceViewModel->GetCurrentEnergy(), PlayerResourceViewModel->GetMaxEnergy());
     }
 }
 
 void UPlayerWeaponWidget::UnbindViewModel()
 {
-    if (WeaponViewModel && bIsViewModelBound)
+    if (bIsViewModelBound)
     {
-        WeaponViewModel->OnPlayerResourceUpdate.RemoveDynamic(this, &UPlayerWeaponWidget::UpdatePlayerResourceBar);
-    
+        if (WeaponViewModel)
+        {
+            WeaponViewModel->OnMainWeaponUpdate.RemoveDynamic(this, &UPlayerWeaponWidget::UpdateMainWeaponInfo);
+            WeaponViewModel->OnSubWeaponUpdate.RemoveDynamic(this, &UPlayerWeaponWidget::UpdateSubWeaponInfo);
+        }
+
+        if (PlayerResourceViewModel)
+        {
+            PlayerResourceViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerWeaponWidget::HandleResourceFieldChanged);
+        }
+
         bIsViewModelBound = false;
+    }
+}
+
+void UPlayerWeaponWidget::HandleResourceFieldChanged(FName FieldName)
+{
+    if (!PlayerResourceViewModel)
+    {
+        return;
+    }
+
+    if (FieldName == PlayerResourceVMFields::EnergyCurrent
+        || FieldName == PlayerResourceVMFields::EnergyMax
+        || FieldName == PlayerResourceVMFields::EnergyPercent)
+    {
+        UpdatePlayerResourceBar(PlayerResourceViewModel->GetCurrentEnergy(), PlayerResourceViewModel->GetMaxEnergy());
     }
 }

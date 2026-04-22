@@ -79,6 +79,8 @@ void ATestPlayerController::BeginPlay()
     // MVVM 서브시스템으로 위젯들에 뷰모델 주입
     if (UMVVMSubsystem* MVVMSubsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
     {
+        UPlayerResourceViewModel* ResourceViewModel = MVVMSubsystem->GetPlayerStatusViewModel();
+
         // 퍽 선택 화면 위젯 바인딩 && 퍽 인벤토리 뷰모델 설정
         if (PerkSelectionScreenClass)
         {
@@ -101,7 +103,7 @@ void ATestPlayerController::BeginPlay()
 
             InGameMenuWidget->GetPlayingPlayerStatPanel()
                 ->GetPlayerStatPanelWidget()
-                ->SetViewModel(MVVMSubsystem->GetPlayerStatusViewModel(), MVVMSubsystem->GetWeaponViewModel());
+                ->SetViewModel(ResourceViewModel, MVVMSubsystem->GetWeaponViewModel());
 
             // 계속하기 버튼 처리
             InGameMenuWidget->OnInGameMenuClosed.AddDynamic(this, &ATestPlayerController::OnPauseInput);

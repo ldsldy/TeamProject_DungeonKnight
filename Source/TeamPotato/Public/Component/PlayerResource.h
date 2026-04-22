@@ -6,9 +6,18 @@
 #include "Components/ActorComponent.h"
 #include "PlayerResource.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, InCurrentHealth, float, InMaxHealth);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnResourceChanged, float, InCurrentEnergy, float, InMaxEnergy);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGoldChanged, int32, InCurrentGold);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerResourceScalarChanged, FName, Key, float, Value);
+
+namespace PlayerResourceScalarKeys
+{
+    TEAMPOTATO_API extern const FName HealthCurrent;
+    TEAMPOTATO_API extern const FName HealthMax;
+    TEAMPOTATO_API extern const FName EnergyCurrent;
+    TEAMPOTATO_API extern const FName EnergyMax;
+    TEAMPOTATO_API extern const FName Gold;
+    TEAMPOTATO_API extern const FName WalkSpeed;
+    TEAMPOTATO_API extern const FName AttackPower;
+}
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TEAMPOTATO_API UPlayerResource : public UActorComponent
@@ -25,15 +34,21 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
-    //getter
-    inline float GetHealthAmount() { return Health; }
-    inline float GetEnergyAmount() { return Energy; }
-    inline int GetCurrentGold() { return CurrentGold; }
+    // getter
+    float GetHealthAmount() const { return Health; }
+    float GetMaxHealthAmount() const { return MaxHealth; }
+    float GetEnergyAmount() const { return Energy; }
+    float GetMaxEnergyAmount() const { return MaxEnergy; }
+    int32 GetCurrentGold() const { return CurrentGold; }
+    float GetWalkSpeed() const { return WalkSpeed; }
+    float GetAttackPower() const { return AttackPower; }
 
-    //Setter
-    inline void SetMaxHealth(float InMaxHealth);
-    inline void SetMaxEnergy(float InMaxEnergy);
-
+    // setter
+    void SetMaxHealth(float InMaxHealth);
+    void SetMaxEnergy(float InMaxEnergy);
+    
+    UFUNCTION(BlueprintCallable) 
+    void SetWalkSpeed(float InWalkSpeed);
     //inline float GetStaminaAmount() { return Stamina; }
 
     //리소스 사용
@@ -52,23 +67,23 @@ public:
     void AddPower(float InPower);
     void AddMaxHealth(float InMaxHealth);
     void AddMaxEnergy(float InMaxStamina);
+    void AddWalkSpeed(float InWalkSpeed);
 
 private:
     //스태미나가 사용할만큼 충분히 있는지 확인
 	inline bool IsEnergyRemain(float InUseEnergyAmount) { return (Energy > (InUseEnergyAmount - EnergyEpsilon)); }
 
+    void BroadcastScalar(FName Key, float Value);
     void BroadcastHealthChanged();
     void BroadcastEnergyChanged();
     void BroadcastGoldChanged();
+    void BroadcastWalkSpeedChanged();
+    void BroadcastAttackPowerChanged();
 
 public:
-    // --- 체력,자원 변경 델리게이트 ---
+    // --- 단일 스칼라 변경 델리게이트 ---
     UPROPERTY(BlueprintAssignable, Category = "Resource")
-    FOnHealthChanged OnHealthChanged;
-    UPROPERTY(BlueprintAssignable, Category = "Resource")
-    FOnResourceChanged OnEnergyChanged;
-    UPROPERTY(BlueprintAssignable, Category = "Resource")
-    FOnGoldChanged OnGoldChanged;
+    FOnPlayerResourceScalarChanged OnScalarChanged;
 
 private:
     //체력
@@ -95,6 +110,9 @@ private:
     float AttackPower = 10.0f;
     //최소 공격력(이 이하로 내려가지 않음)
     float MinAttackPower = 0.1f;
+
+    // 이동 속도
+    float WalkSpeed = 600.0f;
 
     //살아있는지 죽었는지
     bool bIsAlive = true;

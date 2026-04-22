@@ -4,7 +4,21 @@
 #include "Component/PlayerResource.h"
 #include "Player/TestCharacter.h"
 #include "Subsystem/MVVMSubsystem.h"
+#include "Subsystem/CharacterSubsystem.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
+namespace PlayerResourceScalarKeys
+{
+    const FName HealthCurrent(TEXT("HealthCurrent"));
+    const FName HealthMax(TEXT("HealthMax"));
+    const FName EnergyCurrent(TEXT("EnergyCurrent"));
+    const FName EnergyMax(TEXT("EnergyMax"));
+    const FName Gold(TEXT("Gold"));
+    const FName WalkSpeed(TEXT("WalkSpeed"));
+    const FName AttackPower(TEXT("AttackPower"));
+}
 
 // Sets default values for this component's properties
 UPlayerResource::UPlayerResource()
@@ -22,20 +36,27 @@ void UPlayerResource::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ...
+    if (UCharacterSubsystem* CharacterSubsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UCharacterSubsystem>())
+    {
+        const FPlayerSaveData& CurrentPlayerData = CharacterSubsystem->GetCurrentPlayerData();
+        SetMaxHealth(CurrentPlayerData.MaxHealth);
+        SetMaxEnergy(CurrentPlayerData.MaxEnergy);
+        SetWalkSpeed(CurrentPlayerData.WalkSpeed);
+    }
+    else
+    {
+        SetMaxHealth(MaxHealth);
+        SetMaxEnergy(MaxEnergy);
+        SetWalkSpeed(WalkSpeed);
+    }
+
+    CurrentGold = 0;
 
     if (UMVVMSubsystem* Subsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UMVVMSubsystem>())
     {
         Subsystem->RegisterPlayerResourceComp(this);
     }
 
-    Health = MaxHealth;
-	Energy = MaxEnergy;
-    CurrentGold = 0;
-
-    // 초기 체력, 에너지 값, 골드 브로드캐스트
-    BroadcastHealthChanged();
-    BroadcastEnergyChanged();
     BroadcastGoldChanged();
 }
 
@@ -48,23 +69,38 @@ void UPlayerResource::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
 }
 
-inline void UPlayerResource::SetMaxHealth(float InMaxHealth)
+void UPlayerResource::SetMaxHealth(float InMaxHealth)
 {
-    MaxHealth = InMaxHealth;
+    MaxHealth = FMath::Max(MinHealth, InMaxHealth);
     Health = MaxHealth;
     BroadcastHealthChanged();
 }
 
-inline void UPlayerResource::SetMaxEnergy(float InMaxEnergy)
+void UPlayerResource::SetMaxEnergy(float InMaxEnergy)
 {
-    MaxEnergy = InMaxEnergy;
+    MaxEnergy = FMath::Max(MinEnergy, InMaxEnergy);
     Energy = MaxEnergy;
     BroadcastEnergyChanged();
 }
 
+void UPlayerResource::SetWalkSpeed(float InWalkSpeed)
+{
+    WalkSpeed = FMath::Max(0.0f, InWalkSpeed);
+
+    if (ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner()))
+    {
+        if (UCharacterMovementComponent* MovementComp = OwnerCharacter->GetCharacterMovement())
+        {
+            MovementComp->MaxWalkSpeed = WalkSpeed;
+        }
+    }
+
+    BroadcastWalkSpeedChanged();
+}
+
 void UPlayerResource::PlayerTakeDamage(float InDamage)
 {
-    Health -= InDamage;
+    Health = FMath::Clamp(Health - InDamage, 0.0f, MaxHealth);
 
     // 체력 변경 브로드캐스트 시도
     BroadcastHealthChanged();
@@ -79,11 +115,7 @@ void UPlayerResource::PlayerTakeDamage(float InDamage)
 
 void UPlayerResource::Heal(float InHeal)
 {
-    Health += InHeal;
-    if (Health >= MaxHealth)
-    {
-        Health = MaxHealth;
-    }
+    Health = FMath::Clamp(Health + InHeal, 0.0f, MaxHealth);
     // 체력 변경 브로드캐스트 시도
     BroadcastHealthChanged();
 }
@@ -93,11 +125,7 @@ bool UPlayerResource::UseEnergy(float InUseStaminaAmount)
     
     if (IsEnergyRemain(InUseStaminaAmount))
     {
-        Energy -= InUseStaminaAmount;
-        if (Energy > MaxEnergy)
-        {
-            Energy = MaxEnergy;
-        }
+        Energy = FMath::Clamp(Energy - InUseStaminaAmount, 0.0f, MaxEnergy);
         UE_LOG(LogTemp, Log, TEXT("Stamina : %f"), Energy);
         // 에너지 변경 브로드캐스트 시도
         BroadcastEnergyChanged();
@@ -118,57 +146,62 @@ void UPlayerResource::AddGold(int32 InGold)
 
 void UPlayerResource::FillEnergy(float InEnergy)
 {
-    Energy += InEnergy;
-    if (Energy > MaxEnergy)
-    {
-        Energy = MaxEnergy;
-    }
+    Energy = FMath::Clamp(Energy + InEnergy, 0.0f, MaxEnergy);
     UE_LOG(LogTemp, Log, TEXT("Stamina : %f"), Energy);
     BroadcastEnergyChanged();
 }
 
 void UPlayerResource::AddPower(float InPower)
 {
-    AttackPower += InPower;
+    AttackPower = FMath::Max(MinAttackPower, AttackPower + InPower);
     UE_LOG(LogTemp, Log, TEXT("Power : %f"), AttackPower);
+    BroadcastAttackPowerChanged();
 }
 
 void UPlayerResource::AddMaxHealth(float InMaxHealth)
 {
-    MaxHealth += InMaxHealth;
-    Heal(InMaxHealth);
-    BroadcastHealthChanged();
+    SetMaxHealth(MaxHealth + InMaxHealth);
 }
 
 void UPlayerResource::AddMaxEnergy(float InMaxStamina)
 {
-    MaxEnergy += InMaxStamina;
-    FillEnergy(InMaxStamina);
-    BroadcastEnergyChanged();
+    SetMaxEnergy(MaxEnergy + InMaxStamina);
+}
+
+void UPlayerResource::AddWalkSpeed(float InWalkSpeed)
+{
+    SetWalkSpeed(WalkSpeed + InWalkSpeed);
+}
+
+void UPlayerResource::BroadcastScalar(FName Key, float Value)
+{
+    OnScalarChanged.Broadcast(Key, Value);
 }
 
 // 최대 체력이나 현재 체력이 바뀌었을 때 뒤에 넣어서 브로드캐스트 해주는 함수
 void UPlayerResource::BroadcastHealthChanged()
 {
-    if (OnHealthChanged.IsBound())
-    {
-        OnHealthChanged.Broadcast(Health, MaxHealth);
-    }
+    BroadcastScalar(PlayerResourceScalarKeys::HealthCurrent, Health);
+    BroadcastScalar(PlayerResourceScalarKeys::HealthMax, MaxHealth);
 }
 
 void UPlayerResource::BroadcastEnergyChanged()
 {
-    if (OnEnergyChanged.IsBound())
-    {
-        OnEnergyChanged.Broadcast(Energy, MaxEnergy);
-    }
-
+    BroadcastScalar(PlayerResourceScalarKeys::EnergyCurrent, Energy);
+    BroadcastScalar(PlayerResourceScalarKeys::EnergyMax, MaxEnergy);
 }
 
 void UPlayerResource::BroadcastGoldChanged()
 {
-    if (OnGoldChanged.IsBound())
-    {
-        OnGoldChanged.Broadcast(CurrentGold);
-    }
+    BroadcastScalar(PlayerResourceScalarKeys::Gold, static_cast<float>(CurrentGold));
+}
+
+void UPlayerResource::BroadcastWalkSpeedChanged()
+{
+    BroadcastScalar(PlayerResourceScalarKeys::WalkSpeed, WalkSpeed);
+}
+
+void UPlayerResource::BroadcastAttackPowerChanged()
+{
+    BroadcastScalar(PlayerResourceScalarKeys::AttackPower, AttackPower);
 }

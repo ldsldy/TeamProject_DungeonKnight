@@ -3,9 +3,8 @@
 
 #include "UI/Player/PlayerStatWidget.h"
 #include "Components/ProgressBar.h"
-#include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "Subsystem/ViewModel/PlayerStatusViewModel.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 #include "TimerManager.h"
 
 void UPlayerStatWidget::NativeConstruct()
@@ -22,7 +21,7 @@ void UPlayerStatWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UPlayerStatWidget::SetViewModel(UPlayerStatusViewModel* InViewModel)
+void UPlayerStatWidget::SetViewModel(UPlayerResourceViewModel* InViewModel)
 {
     UnbindViewModel();
     PlayerStatusViewModel = InViewModel;
@@ -34,11 +33,10 @@ void  UPlayerStatWidget::BindViewModel()
     // 뷰모델의 델리게이트에 바인딩
     if (PlayerStatusViewModel && !bIsViewModelBound)
     {
-        // 모델 -> 뷰
-        PlayerStatusViewModel->OnPlayerHealthChangedWithText.AddDynamic(this, &UPlayerStatWidget::SetPlayerHealthBar);
-        PlayerStatusViewModel->OnPlayerIconChanged.AddDynamic(this, &UPlayerStatWidget::SetPlayerIcon);
+        PlayerStatusViewModel->OnFieldChanged.AddDynamic(this, &UPlayerStatWidget::HandleViewModelFieldChanged);
 
         bIsViewModelBound = true;
+        RefreshHealthUI();
     }
 }
 
@@ -46,24 +44,41 @@ void  UPlayerStatWidget::UnbindViewModel()
 {
     if (PlayerStatusViewModel && bIsViewModelBound)
     {
-        PlayerStatusViewModel->OnPlayerHealthChangedWithText.RemoveDynamic(this, &UPlayerStatWidget::SetPlayerHealthBar);
-        PlayerStatusViewModel->OnPlayerIconChanged.RemoveDynamic(this, &UPlayerStatWidget::SetPlayerIcon);
+        PlayerStatusViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerStatWidget::HandleViewModelFieldChanged);
 
         bIsViewModelBound = false;
     }
 }
 
-void UPlayerStatWidget::SetPlayerHealthBar(float NewHealthPercent, FText NewHealthText)
+void UPlayerStatWidget::HandleViewModelFieldChanged(FName FieldName)
 {
+    if (FieldName == PlayerResourceVMFields::HealthCurrent
+        || FieldName == PlayerResourceVMFields::HealthMax
+        || FieldName == PlayerResourceVMFields::HealthPercent)
+    {
+        RefreshHealthUI();
+    }
+}
+
+void UPlayerStatWidget::RefreshHealthUI()
+{
+    if (!PlayerStatusViewModel)
+    {
+        return;
+    }
+
+    CurrentHealthPercent = PlayerStatusViewModel->GetHealthPercent();
+
     if (PlayerHealthBar)
     {
-        CurrentHealthPercent = NewHealthPercent;
         PlayerHealthBar->SetPercent(CurrentHealthPercent);
     }
 
     if (HealthText)
     {
-        HealthText->SetText(NewHealthText);
+        const int32 CurrentHealth = FMath::RoundToInt(PlayerStatusViewModel->GetCurrentHealth());
+        const int32 MaxHealth = FMath::RoundToInt(PlayerStatusViewModel->GetMaxHealth());
+        HealthText->SetText(FText::FromString(FString::Printf(TEXT("%d / %d"), CurrentHealth, MaxHealth)));
     }
 
     if (CurrentHealthPercent < DelayBarPercent)
@@ -82,15 +97,6 @@ void UPlayerStatWidget::SetPlayerHealthBar(float NewHealthPercent, FText NewHeal
         {
             DelayProgressBar->SetPercent(DelayBarPercent);
         }
-    }
-}
-
-void UPlayerStatWidget::SetPlayerIcon(UTexture2D* NewPlayerIcon)
-{
-    //UE_LOG(LogTemp, Warning, TEXT("UPlayerStatWidget::SetPlayerIcon - NewPlayerIcon received"));
-    if (PlayerIconImage && NewPlayerIcon)
-    {
-        PlayerIconImage->SetBrushFromTexture(NewPlayerIcon);
     }
 }
 

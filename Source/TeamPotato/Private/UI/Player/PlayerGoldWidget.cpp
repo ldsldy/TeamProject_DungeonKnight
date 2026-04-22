@@ -3,7 +3,7 @@
 
 #include "UI/Player/PlayerGoldWidget.h"
 #include "Components/TextBlock.h"
-#include "Subsystem/ViewModel/ItemViewModel.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 
 void UPlayerGoldWidget::NativeConstruct()
 {
@@ -19,38 +19,47 @@ void UPlayerGoldWidget::NativeDestruct()
     Super::NativeDestruct();
 }
 
-void UPlayerGoldWidget::SetViewModel(UItemViewModel* InViewModel)
+void UPlayerGoldWidget::SetViewModel(UPlayerResourceViewModel* InViewModel)
 {
     UnbindViewModel();
-    ItemViewModel = InViewModel;
+    PlayerResourceViewModel = InViewModel;
     BindViewModel();
 }
 
 void UPlayerGoldWidget::BindViewModel()
 {
-    if (ItemViewModel && !bIsViewModelBound)
+    if (PlayerResourceViewModel && !bIsViewModelBound)
     {
-        ItemViewModel->OnPlayerGoldUpdate.AddDynamic(this, &UPlayerGoldWidget::UpdatePlayerGold);
+        PlayerResourceViewModel->OnFieldChanged.AddDynamic(this, &UPlayerGoldWidget::HandleViewModelFieldChanged);
 
         bIsViewModelBound = true;
+        UpdatePlayerGold();
     }
 }
 
 
 void UPlayerGoldWidget::UnbindViewModel()
 {
-    if (ItemViewModel && bIsViewModelBound)
+    if (PlayerResourceViewModel && bIsViewModelBound)
     {
-        ItemViewModel->OnPlayerGoldUpdate.RemoveDynamic(this, &UPlayerGoldWidget::UpdatePlayerGold);
+        PlayerResourceViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerGoldWidget::HandleViewModelFieldChanged);
 
         bIsViewModelBound = false;
     }
 }
 
-void UPlayerGoldWidget::UpdatePlayerGold(int32 NewGoldAmount)
+void UPlayerGoldWidget::HandleViewModelFieldChanged(FName FieldName)
 {
-    if (PlayerGoldText)
+    if (FieldName == PlayerResourceVMFields::Gold)
     {
-        PlayerGoldText->SetText(FText::AsNumber(NewGoldAmount));
+        UpdatePlayerGold();
+    }
+}
+
+void UPlayerGoldWidget::UpdatePlayerGold()
+{
+    if (PlayerGoldText && PlayerResourceViewModel)
+    {
+        PlayerGoldText->SetText(FText::AsNumber(PlayerResourceViewModel->GetCurrentGold()));
     }
 }

@@ -4,11 +4,9 @@
 #include "UI/InGameMenu/PlayerStatPanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
-#include "Subsystem/ViewModel/PlayerStatusViewModel.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
-#include "Subsystem/CharacterSubsystem.h"
 #include "Data/WeaponDataAsset.h"
-#include "Kismet/GameplayStatics.h"
 
 void UPlayerStatPanelWidget::NativeConstruct()
 {
@@ -23,7 +21,7 @@ void UPlayerStatPanelWidget::NativeDestruct()
     Super::NativeDestruct();
 }
 
-void UPlayerStatPanelWidget::SetViewModel(UPlayerStatusViewModel* InPlayerViewModel, UWeaponViewModel* InWeaponViewModel)
+void UPlayerStatPanelWidget::SetViewModel(UPlayerResourceViewModel* InPlayerViewModel, UWeaponViewModel* InWeaponViewModel)
 {
     UnbindViewModel();
 
@@ -40,15 +38,17 @@ void UPlayerStatPanelWidget::BindViewModel()
     {
         UE_LOG(LogTemp, Warning, TEXT("UPlayerStatPanelWidget::BindViewModel - Binding to PlayerStatusViewModel"));
 
-        PlayerStatusViewModel->OnPlayerHealthChangedCurrentMaxHealth.AddDynamic(this, &UPlayerStatPanelWidget::UpdateHealthUI);
-        PlayerStatusViewModel->OnPlayerWalkSpeedChanged.AddDynamic(this, &UPlayerStatPanelWidget::UpdateWalkSpeedUI);
+        PlayerStatusViewModel->OnFieldChanged.AddDynamic(this, &UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged);
 
         UE_LOG(LogTemp, Warning, TEXT("UPlayerStatPanelWidget::BindViewModel - Binding to WeaponViewModel"));
 
-        PlayerWeaponViewModel->OnPlayerResourceUpdate.AddDynamic(this, &UPlayerStatPanelWidget::UpdateEnergyUI);
         PlayerWeaponViewModel->OnMainWeaponUpdate.AddDynamic(this, &UPlayerStatPanelWidget::UpdateWeaponDataUI);
 
         bIsBound = true;
+
+        UpdateHealthUI();
+        UpdateEnergyUI();
+        UpdateWalkSpeedUI();
     }
 }
 
@@ -56,14 +56,14 @@ void UPlayerStatPanelWidget::UnbindViewModel()
 {
     if(PlayerStatusViewModel && bIsBound)
     {
-        PlayerStatusViewModel->OnPlayerHealthChangedCurrentMaxHealth.RemoveDynamic(this, &UPlayerStatPanelWidget::UpdateHealthUI);
-        bIsBound = false;
+        PlayerStatusViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged);
     }
     if(PlayerWeaponViewModel && bIsBound)
     {
-        PlayerWeaponViewModel->OnPlayerResourceUpdate.RemoveDynamic(this, &UPlayerStatPanelWidget::UpdateEnergyUI);
-        bIsBound = false;
+        PlayerWeaponViewModel->OnMainWeaponUpdate.RemoveDynamic(this, &UPlayerStatPanelWidget::UpdateWeaponDataUI);
     }
+
+    bIsBound = false;
 }
 
 //void UPlayerStatPanelWidget::OnPlayerStatHealthChanged(float InCurrentHealth, float InMaxHealth)
@@ -76,27 +76,61 @@ void UPlayerStatPanelWidget::UnbindViewModel()
 //    UpdateEnergyUI(CurrentResource, MaxResource);
 //}
 
-void UPlayerStatPanelWidget::UpdateHealthUI(float InCurrentHealth, float InMaxHealth)
+void UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged(FName FieldName)
 {
+    if (FieldName == PlayerResourceVMFields::HealthCurrent
+        || FieldName == PlayerResourceVMFields::HealthMax
+        || FieldName == PlayerResourceVMFields::HealthPercent)
+    {
+        UpdateHealthUI();
+        return;
+    }
+
+    if (FieldName == PlayerResourceVMFields::EnergyCurrent
+        || FieldName == PlayerResourceVMFields::EnergyMax
+        || FieldName == PlayerResourceVMFields::EnergyPercent)
+    {
+        UpdateEnergyUI();
+        return;
+    }
+
+    if (FieldName == PlayerResourceVMFields::WalkSpeed)
+    {
+        UpdateWalkSpeedUI();
+    }
+}
+
+void UPlayerStatPanelWidget::UpdateHealthUI()
+{
+    if (!PlayerStatusViewModel) return;
+
+    const float CurrentHealth = PlayerStatusViewModel->GetCurrentHealth();
+    const float MaxHealth = FMath::Max(PlayerStatusViewModel->GetMaxHealth(), 1.0f);
+
     if(HealthProgressBar)
     {
-        float HealthPercent = FMath::Clamp(InCurrentHealth / InMaxHealth, 0.0f, 1.0f);
+        float HealthPercent = FMath::Clamp(CurrentHealth / MaxHealth, 0.0f, 1.0f);
         HealthProgressBar->SetPercent(HealthPercent);
     }
     if(CurrentHealthText)
     {
-        FText HealthText = FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), InCurrentHealth, InMaxHealth));
+        FText HealthText = FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), CurrentHealth, MaxHealth));
         CurrentHealthText->SetText(HealthText);
     }
     if(HealthStatText)
     {
-        FText HealthStat = FText::FromString(FString::Printf(TEXT("%.0f"), InMaxHealth));
+        FText HealthStat = FText::FromString(FString::Printf(TEXT("%.0f"), MaxHealth));
         HealthStatText->SetText(HealthStat);
     }
 }
 
-void UPlayerStatPanelWidget::UpdateEnergyUI(float CurrentResource, float MaxResource)
+void UPlayerStatPanelWidget::UpdateEnergyUI()
 {
+    if (!PlayerStatusViewModel) return;
+
+    const float CurrentResource = PlayerStatusViewModel->GetCurrentEnergy();
+    const float MaxResource = FMath::Max(PlayerStatusViewModel->GetMaxEnergy(), 1.0f);
+
     if(EnergyProgressBar)
     {
         float EnergyPercent = FMath::Clamp(CurrentResource / MaxResource, 0.0f, 1.0f);
@@ -126,10 +160,13 @@ void UPlayerStatPanelWidget::UpdateWeaponDataUI(UWeaponDataAsset* InWeaponData)
     }
 }
 
-void UPlayerStatPanelWidget::UpdateWalkSpeedUI(float NewWalkSpeed)
+void UPlayerStatPanelWidget::UpdateWalkSpeedUI()
 {
+    if (!PlayerStatusViewModel) return;
+
     if (WalkSpeedText)
     {
+        const float NewWalkSpeed = PlayerStatusViewModel->GetWalkSpeed();
         FText WalkSpeedStat = FText::FromString(FString::Printf(TEXT("%.0f"), NewWalkSpeed));
         WalkSpeedText->SetText(WalkSpeedStat);
     }

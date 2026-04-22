@@ -6,10 +6,9 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MVVMSubsystem.generated.h"
 
-class UPlayerStatusViewModel;
+class UPlayerResourceViewModel;
 class UPerkViewModel;
 class UWeaponViewModel;
-class UItemViewModel;
 class UMinimapViewModel;
 class UEnemyViewModel;
 class UPlayerResource;
@@ -27,13 +26,11 @@ class TEAMPOTATO_API UMVVMSubsystem : public UGameInstanceSubsystem
 public:
 	// --- 뷰모델 생성 함수 ---
 	UFUNCTION(BlueprintPure)
-	UPlayerStatusViewModel* GetPlayerStatusViewModel();
+	UPlayerResourceViewModel* GetPlayerStatusViewModel();
 	UFUNCTION(BlueprintPure)
     UPerkViewModel* GetPerkViewModel();
     UFUNCTION(BlueprintPure)
     UWeaponViewModel* GetWeaponViewModel();
-    UFUNCTION(BlueprintPure)
-    UItemViewModel* GetItemViewModel();
     UFUNCTION(BlueprintPure)
     UMinimapViewModel* GetMinimapViewModel();
     UFUNCTION(BlueprintPure)
@@ -77,13 +74,8 @@ protected:
     virtual void Deinitialize() override;
 
 private:
-    // --- 플레이어 변경 델리게이트를 처리하는 함수 ---
-    UFUNCTION()
-    void HandlePlayerChanged();
-
-private:
 	UPROPERTY()
-	TObjectPtr<UPlayerStatusViewModel> PlayerStatusViewModel;
+	TObjectPtr<UPlayerResourceViewModel> PlayerStatusViewModel;
 
 	UPROPERTY()
 	TObjectPtr<UPerkViewModel> PerkViewModel;
@@ -92,11 +84,11 @@ private:
     TObjectPtr<UWeaponViewModel> WeaponViewModel;
 
     UPROPERTY()
-    TObjectPtr<UItemViewModel> ItemViewModel;
-    
-    UPROPERTY()
     TObjectPtr<UMinimapViewModel> MinimapViewModel;
 
     UPROPERTY()
     TObjectPtr<UEnemyViewModel> EnemyViewModel;
+
+    UPROPERTY()
+    TObjectPtr<UPlayerResource> RegisteredPlayerResourceComp;
 };

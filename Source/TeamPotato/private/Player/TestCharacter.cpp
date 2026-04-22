@@ -602,7 +602,10 @@ void ATestCharacter::AddMaxEnergy(float InMaxEnergy)
 
 void ATestCharacter::AddMoveSpeed(float InMoveSpeed)
 {
-    MovementComponent->MaxWalkSpeed += InMoveSpeed;
+    if (ResourceManager)
+    {
+        ResourceManager->AddWalkSpeed(InMoveSpeed);
+    }
 
     if (CharacterSubsystem)
     {

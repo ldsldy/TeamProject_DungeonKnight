@@ -5,61 +5,39 @@
 #include "Component/PerkComponent.h"
 #include "Component/PlayerResource.h"
 #include "Component/WeaponComponent.h"
-#include "Subsystem/ViewModel/PlayerStatusViewModel.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 #include "Subsystem/ViewModel/PerkViewModel.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
-#include "Subsystem/ViewModel/ItemViewModel.h"
 #include "Subsystem/ViewModel/MinimapViewModel.h"
 #include "Subsystem/ViewModel/EnemyViewModel.h"
 #include "Data/WeaponDataAsset.h"
 #include "TeamPotato/Logic/DungeonGanarator.h"
-#include "Subsystem/CharacterSubsystem.h"
 #include "Enemy/BossBase.h"
 #include "Player/TestPlayerController.h"
 
 void UMVVMSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-    UCharacterSubsystem* CharacterSubsystem = Collection.InitializeDependency<UCharacterSubsystem>();
-
     Super::Initialize(Collection);
-
-    CharacterSubsystem = GetGameInstance()->GetSubsystem<UCharacterSubsystem>();
-    if (CharacterSubsystem)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("UMVVMSubsystem::Initialize - CharacterSubsystem found, binding to OnSelectedCharacterChanged"));
-
-        // 초기화 시점에 플레이어 아이콘 설정
-        PlayerStatusViewModel = GetPlayerStatusViewModel();
-        PlayerStatusViewModel->SetPlayerIcon(CharacterSubsystem->GetPlayerIcon());
-
-        CharacterSubsystem->OnSelectedCharacterChanged.AddDynamic(this, &UMVVMSubsystem::HandlePlayerChanged);
-        CharacterSubsystem->OnWalkSpeedChanged.AddDynamic(PlayerStatusViewModel, &UPlayerStatusViewModel::UpdateWalkSpeed);
-    }
 }
 
 void UMVVMSubsystem::Deinitialize()
 {
-
-}
-
-void UMVVMSubsystem::HandlePlayerChanged()
-{
-    UCharacterSubsystem* CharacterSubsystem = GetGameInstance()->GetSubsystem<UCharacterSubsystem>();
-
-    if (PlayerStatusViewModel && CharacterSubsystem)
+    if (PlayerStatusViewModel)
     {
-        // PlayerStatusViewModel의 아이콘 갱신 실행
-        PlayerStatusViewModel = GetPlayerStatusViewModel();
-        PlayerStatusViewModel -> SetPlayerIcon(CharacterSubsystem->GetPlayerIcon());
+        PlayerStatusViewModel->Deinitialize();
     }
+
+    RegisteredPlayerResourceComp = nullptr;
+
+    Super::Deinitialize();
 }
 
 
-UPlayerStatusViewModel* UMVVMSubsystem::GetPlayerStatusViewModel()
+UPlayerResourceViewModel* UMVVMSubsystem::GetPlayerStatusViewModel()
 {
 	if (!PlayerStatusViewModel)
 	{
-		PlayerStatusViewModel = NewObject<UPlayerStatusViewModel>(this);
+		PlayerStatusViewModel = NewObject<UPlayerResourceViewModel>(this);
 	}	
 	return PlayerStatusViewModel;
 }
@@ -80,15 +58,6 @@ UWeaponViewModel* UMVVMSubsystem::GetWeaponViewModel()
         WeaponViewModel = NewObject<UWeaponViewModel>(this);
     }
     return WeaponViewModel;
-}
-
-UItemViewModel* UMVVMSubsystem::GetItemViewModel()
-{
-    if (!ItemViewModel)
-    {
-        ItemViewModel = NewObject<UItemViewModel>(this);
-    }
-    return ItemViewModel;
 }
 
 UMinimapViewModel* UMVVMSubsystem::GetMinimapViewModel()
@@ -118,25 +87,28 @@ void UMVVMSubsystem::RegisterPlayerResourceComp(UPlayerResource* NewComp)
 {
 	if (!NewComp) return;
 
-	// 기존에 등록된 컴포넌트가 있다면 해제(안정장치)
-	UnregisterPlayerResourceComp(NewComp);
+    if (RegisteredPlayerResourceComp && RegisteredPlayerResourceComp != NewComp)
+    {
+        UnregisterPlayerResourceComp(RegisteredPlayerResourceComp);
+    }
+
+    RegisteredPlayerResourceComp = NewComp;
 
 	// 뷰모델 가져오기
-	UPlayerStatusViewModel* VM = GetPlayerStatusViewModel();
-
-	// 델리게이트 바인딩(컴포넌트의 체력이 바뀌면 -> 뷰모델의 SetHealth도 실행 등등)
-	NewComp->OnHealthChanged.AddDynamic(PlayerStatusViewModel, &UPlayerStatusViewModel::SetHealth);
-    NewComp->OnEnergyChanged.AddDynamic(WeaponViewModel, &UWeaponViewModel::SetResource);
-    NewComp->OnGoldChanged.AddDynamic(ItemViewModel, &UItemViewModel::SetCurrentGold);
+	UPlayerResourceViewModel* VM = GetPlayerStatusViewModel();
+    VM->Initialize(NewComp);
 }
 
 void UMVVMSubsystem::UnregisterPlayerResourceComp(UPlayerResource* ExitingComp)
 {
-	if (ExitingComp && PlayerStatusViewModel)
-	{
-		// 델리게이트 언바인딩
-		ExitingComp->OnHealthChanged.RemoveDynamic(PlayerStatusViewModel, &UPlayerStatusViewModel::SetHealth);
-        ExitingComp->OnEnergyChanged.RemoveDynamic(WeaponViewModel, &UWeaponViewModel::SetResource);	
+    if (PlayerStatusViewModel)
+    {
+        PlayerStatusViewModel->Deinitialize();
+    }
+
+    if (RegisteredPlayerResourceComp == ExitingComp)
+    {
+        RegisteredPlayerResourceComp = nullptr;
 	}
 }
 

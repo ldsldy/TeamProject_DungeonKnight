@@ -9,7 +9,7 @@
 
 class UTextBlock;
 class UProgressBar;
-class UPlayerStatusViewModel;
+class UPlayerResourceViewModel;
 class UWeaponViewModel;
 /**
  * 
@@ -21,7 +21,7 @@ class TEAMPOTATO_API UPlayerStatPanelWidget : public UUserWidget
 	
 public:
     UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UPlayerStatusViewModel* InPlayerViewModel, UWeaponViewModel* InWeaponViewModel);
+    void SetViewModel(UPlayerResourceViewModel* InPlayerViewModel, UWeaponViewModel* InWeaponViewModel);
 
 protected:
     virtual void NativeConstruct() override;
@@ -41,13 +41,13 @@ private:
     void UpdateWeaponDataUI(UWeaponDataAsset* InWeaponData);
 
     UFUNCTION()
-    void UpdateWalkSpeedUI(float NewWalkSpeed);
+    void HandlePlayerResourceFieldChanged(FName FieldName);
     
-    UFUNCTION()
-    void UpdateHealthUI(float InCurrentHealth, float InMaxHealth);
+    void UpdateWalkSpeedUI();
     
-    UFUNCTION()
-    void UpdateEnergyUI(float CurrentResource, float MaxResource);
+    void UpdateHealthUI();
+    
+    void UpdateEnergyUI();
 
 protected:
     UPROPERTY(meta = (BindWidget))
@@ -76,7 +76,7 @@ protected:
 
 private:
     UPROPERTY()
-    TObjectPtr<UPlayerStatusViewModel> PlayerStatusViewModel;
+    TObjectPtr<UPlayerResourceViewModel> PlayerStatusViewModel;
 
     UPROPERTY()
     TObjectPtr<UWeaponViewModel> PlayerWeaponViewModel;
