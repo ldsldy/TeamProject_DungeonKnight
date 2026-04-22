@@ -63,13 +63,7 @@ void UMainMenuWidget::NativeDestruct()
 
 void UMainMenuWidget::OnNewGameClicked()
 {
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UGameStateSubsystem* GameStateSubsystem = GI->GetSubsystem<UGameStateSubsystem>())
-		{
-			GameStateSubsystem->TravelToState(EGameState::Lobby);
-		}
-	}
+    UGameStateSubsystem::Get(this)->TravelToState(EGameState::Lobby);
 }
 
 void UMainMenuWidget::OnSettingClicked()

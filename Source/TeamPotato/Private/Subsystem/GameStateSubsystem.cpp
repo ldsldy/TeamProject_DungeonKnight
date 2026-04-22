@@ -8,6 +8,21 @@
 #include "Engine/AssetManager.h"
 #include "Blueprint/UserWidget.h"
 
+UGameStateSubsystem* UGameStateSubsystem::Get(const UObject* WorldContextObject)
+{
+	if (GEngine)
+	{
+		// 월드 컨텍스트 객체에서 UWorld를 가져오기를 시도하고 실패하면 어설트 모드로 처리합니다.
+		// 우아한 종료는 하고 있던 작업을 적절히 정리하고 종료하는 것입니다. 반대로 어설트는 즉시 종료하는 것입니다.
+		UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::Assert);
+
+		// 월드가 유효하다면, 게임 인스턴스에서 UGameStateSubsystem을 가져옵니다.
+		return UGameInstance::GetSubsystem<UGameStateSubsystem>(World->GetGameInstance());
+	}
+
+	return nullptr;
+}
+
 void UGameStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);

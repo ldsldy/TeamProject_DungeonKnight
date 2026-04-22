@@ -19,6 +19,8 @@ class TEAMPOTATO_API UGameStateSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 	
 public:
+    static UGameStateSubsystem* Get(const UObject* WorldContextObject);
+
 	// =============================================================================
 	// 초기화, 종료
 	// =============================================================================
