@@ -3,21 +3,7 @@
 
 #include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 #include "Component/PlayerResource.h"
-
-namespace PlayerResourceVMFields
-{
-    const FName HealthCurrent(TEXT("HealthCurrent"));
-    const FName HealthMax(TEXT("HealthMax"));
-    const FName HealthPercent(TEXT("HealthPercent"));
-
-    const FName EnergyCurrent(TEXT("EnergyCurrent"));
-    const FName EnergyMax(TEXT("EnergyMax"));
-    const FName EnergyPercent(TEXT("EnergyPercent"));
-
-    const FName Gold(TEXT("Gold"));
-    const FName WalkSpeed(TEXT("WalkSpeed"));
-    const FName AttackPower(TEXT("AttackPower"));
-}
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 
 void UPlayerResourceViewModel::Initialize(UObject* InModel)
 {
@@ -35,13 +21,13 @@ void UPlayerResourceViewModel::Initialize(UObject* InModel)
     Model->OnScalarChanged.AddDynamic(this, &UPlayerResourceViewModel::HandleModelScalarChanged);
 
     // 변경된 모델의 현재 상태로 뷰모델의 필드 초기화
-    HandleModelScalarChanged(PlayerResourceScalarKeys::HealthCurrent, Model->GetHealthAmount());
-    HandleModelScalarChanged(PlayerResourceScalarKeys::HealthMax, Model->GetMaxHealthAmount());
-    HandleModelScalarChanged(PlayerResourceScalarKeys::EnergyCurrent, Model->GetEnergyAmount());
-    HandleModelScalarChanged(PlayerResourceScalarKeys::EnergyMax, Model->GetMaxEnergyAmount());
-    HandleModelScalarChanged(PlayerResourceScalarKeys::Gold, static_cast<float>(Model->GetCurrentGold()));
-    HandleModelScalarChanged(PlayerResourceScalarKeys::WalkSpeed, Model->GetWalkSpeed());
-    HandleModelScalarChanged(PlayerResourceScalarKeys::AttackPower, Model->GetAttackPower());
+    HandleModelScalarChanged(PlayerResourceVMFields::HealthCurrent, Model->GetHealthAmount());
+    HandleModelScalarChanged(PlayerResourceVMFields::HealthMax, Model->GetMaxHealthAmount());
+    HandleModelScalarChanged(PlayerResourceVMFields::EnergyCurrent, Model->GetEnergyAmount());
+    HandleModelScalarChanged(PlayerResourceVMFields::EnergyMax, Model->GetMaxEnergyAmount());
+    HandleModelScalarChanged(PlayerResourceVMFields::Gold, static_cast<float>(Model->GetCurrentGold()));
+    HandleModelScalarChanged(PlayerResourceVMFields::WalkSpeed, Model->GetWalkSpeed());
+    HandleModelScalarChanged(PlayerResourceVMFields::AttackPower, Model->GetAttackPower());
 }
 
 void UPlayerResourceViewModel::Deinitialize()
@@ -56,47 +42,47 @@ void UPlayerResourceViewModel::Deinitialize()
 
 void UPlayerResourceViewModel::HandleModelScalarChanged(FName Key, float Value)
 {
-    if (Key == PlayerResourceScalarKeys::HealthCurrent)
+    if (Key == PlayerResourceVMFields::HealthCurrent)
     {
         SetAndNotifyFloat(CurrentHealth, Value, PlayerResourceVMFields::HealthCurrent);
         RecalculateHealthDerived();
         return;
     }
     
-    if (Key == PlayerResourceScalarKeys::HealthMax)
+    if (Key == PlayerResourceVMFields::HealthMax)
     {
         SetAndNotifyFloat(MaxHealth, FMath::Max(1.0f, Value), PlayerResourceVMFields::HealthMax);
         RecalculateHealthDerived();
         return;
     }
     
-    if (Key == PlayerResourceScalarKeys::EnergyCurrent)
+    if (Key == PlayerResourceVMFields::EnergyCurrent)
     {
         SetAndNotifyFloat(CurrentEnergy, Value, PlayerResourceVMFields::EnergyCurrent);
         RecalculateEnergyDerived();
         return;
     }
     
-    if (Key == PlayerResourceScalarKeys::EnergyMax)
+    if (Key == PlayerResourceVMFields::EnergyMax)
     {
         SetAndNotifyFloat(MaxEnergy, FMath::Max(1.0f, Value), PlayerResourceVMFields::EnergyMax);
         RecalculateEnergyDerived();
         return;
     }
     
-    if (Key == PlayerResourceScalarKeys::Gold)
+    if (Key == PlayerResourceVMFields::Gold)
     {
         SetAndNotify(CurrentGold, FMath::RoundToInt(Value), PlayerResourceVMFields::Gold);
         return;
     }
     
-    if (Key == PlayerResourceScalarKeys::WalkSpeed)
+    if (Key == PlayerResourceVMFields::WalkSpeed)
     {
         SetAndNotifyFloat(WalkSpeed, Value, PlayerResourceVMFields::WalkSpeed);
         return;
     }
     
-    if (Key == PlayerResourceScalarKeys::AttackPower)
+    if (Key == PlayerResourceVMFields::AttackPower)
     {
         SetAndNotifyFloat(AttackPower, Value, PlayerResourceVMFields::AttackPower);
         return;

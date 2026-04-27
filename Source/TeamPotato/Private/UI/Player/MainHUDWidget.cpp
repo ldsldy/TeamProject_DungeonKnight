@@ -11,37 +11,19 @@
 
 void UMainHUDWidget::InitializeViewModels(UMVVMSubsystem* Subsystem)
 {
-    if (!Subsystem) return;
+    // 각 자식 위젯이 NativeConstruct에서 MVVMSubsystem으로 직접 바인딩한다.
+    (void)Subsystem;
 
-    UPlayerResourceViewModel* ResourceViewModel = Subsystem->GetPlayerStatusViewModel();
-
-    // 위젯들에 뷰모델 세팅(이제 위젯은 뷰모델을 알게 된다)
-    if (PlayerStatPanel)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("UMainHUDWidget::InitializeViewModels - Setting PlayerStatPanel ViewModel"));
-        PlayerStatPanel->SetViewModel(ResourceViewModel);
-    }
-    if (InventoryPerkPanel)
-    {
-        InventoryPerkPanel->SetViewModel(Subsystem->GetPerkViewModel());
-    }
-    if (PlayerWeaponPanel)
-    {
-        PlayerWeaponPanel->SetViewModel(Subsystem->GetWeaponViewModel(), ResourceViewModel);
-    }
-    if (PlayerGoldPanel)
-    {
-        PlayerGoldPanel->SetViewModel(ResourceViewModel);
-    }
     if (BossWidget)
     {
-        BossWidget->SetViewModel(Subsystem->GetEnemyViewModel());
         BossWidget->SetVisibility(ESlateVisibility::Collapsed); // 초기에는 숨김
     }
 }
 
 void UMainHUDWidget::ShowBossWidget(UMVVMSubsystem* Subsystem)
 {
+    (void)Subsystem;
+
     if (BossWidget)
     {
         BossWidget->SetVisibility(ESlateVisibility::Visible);
@@ -50,6 +32,8 @@ void UMainHUDWidget::ShowBossWidget(UMVVMSubsystem* Subsystem)
 
 void UMainHUDWidget::HideBossWidget(UMVVMSubsystem* Subsystem)
 {
+    (void)Subsystem;
+
     if (BossWidget)
     {
         BossWidget->SetVisibility(ESlateVisibility::Collapsed);

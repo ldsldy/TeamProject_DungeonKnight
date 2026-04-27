@@ -19,10 +19,6 @@ UCLASS()
 class TEAMPOTATO_API UPlayerWeaponWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-    UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UWeaponViewModel* InWeaponViewModel, UPlayerResourceViewModel* InResourceViewModel);
 
 protected:
     virtual void NativeConstruct() override;

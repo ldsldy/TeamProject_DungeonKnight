@@ -5,12 +5,30 @@
 #include "Components/ProgressBar.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
 #include "Subsystem/ViewModel/PlayerResourceViewModel.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 
 void UPlayerWeaponWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+        {
+            if (!WeaponViewModel)
+            {
+                WeaponViewModel = Subsystem->GetWeaponViewModel();
+            }
+
+            if (!PlayerResourceViewModel)
+            {
+                PlayerResourceViewModel = Subsystem->GetPlayerStatusViewModel();
+            }
+        }
+    }
 
     BindViewModel();
 }
@@ -61,14 +79,6 @@ void UPlayerWeaponWidget::UpdateSubWeaponInfo(UWeaponDataAsset* InDataAsset)
     {
         SubWeaponIconImage->SetBrushFromTexture(InDataAsset->WeaponIcon);
     }
-}
-
-void UPlayerWeaponWidget::SetViewModel(UWeaponViewModel* InWeaponViewModel, UPlayerResourceViewModel* InResourceViewModel)
-{
-    UnbindViewModel();
-    WeaponViewModel = InWeaponViewModel;
-    PlayerResourceViewModel = InResourceViewModel;
-    BindViewModel();
 }
 
 void UPlayerWeaponWidget::BindViewModel()

@@ -24,8 +24,6 @@ void ATestUIController::BeginPlay()
             // 뷰모델 설정
             if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
             {
-                MinimapWidget->SetViewModel(Subsystem->GetMinimapViewModel());
-
                 if (!MinimapViewModel)
                 {
                     MinimapViewModel = Subsystem->GetMinimapViewModel();

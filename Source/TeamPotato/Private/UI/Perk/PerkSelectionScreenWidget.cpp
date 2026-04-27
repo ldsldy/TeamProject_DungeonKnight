@@ -4,11 +4,23 @@
 #include "UI/Perk/PerkSelectionScreenWidget.h"
 #include "Data/PerkDataTableRow.h"
 #include "UI/Perk/PerkCardWidget.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/PerkViewModel.h"
 
 void UPerkSelectionScreenWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+    if (!PerkViewModel)
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+            {
+                PerkViewModel = Subsystem->GetPerkViewModel();
+            }
+        }
+    }
 
 	// Add Viewport마다 랜덤한 3개의 퍽 데이터를 가져와서 카드에 세팅
     SetupPerkCards();
@@ -118,21 +130,3 @@ void UPerkSelectionScreenWidget::HandlePerkSelected(UPerkDataAsset* SelectedPerk
     PerkViewModel->RequestEquipPerk(SelectedPerkData);
     OnPerkSelected.Broadcast();
 }
-
-
-void UPerkSelectionScreenWidget::SetViewModel(UPerkViewModel* InViewModel)
-{
-    //UnbindViewModel();
-    PerkViewModel = InViewModel;
-    //BindViewModel();
-}
-
-//void UPerkSelectionScreenWidget::BindViewModel()
-//{
-
-//}
-//
-//void UPerkSelectionScreenWidget::UnbindViewModel()
-//{
-
-//}

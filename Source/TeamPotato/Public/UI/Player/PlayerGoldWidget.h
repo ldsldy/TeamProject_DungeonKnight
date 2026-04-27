@@ -16,10 +16,6 @@ UCLASS()
 class TEAMPOTATO_API UPlayerGoldWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-    UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UPlayerResourceViewModel* InViewModel);
 
 protected:
     virtual void NativeConstruct() override;

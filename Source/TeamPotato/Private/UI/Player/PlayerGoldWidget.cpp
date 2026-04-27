@@ -3,11 +3,24 @@
 
 #include "UI/Player/PlayerGoldWidget.h"
 #include "Components/TextBlock.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/PlayerResourceViewModel.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 
 void UPlayerGoldWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
+    if (!PlayerResourceViewModel)
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+            {
+                PlayerResourceViewModel = Subsystem->GetPlayerStatusViewModel();
+            }
+        }
+    }
 
     BindViewModel();
 }
@@ -17,13 +30,6 @@ void UPlayerGoldWidget::NativeDestruct()
     UnbindViewModel();
 
     Super::NativeDestruct();
-}
-
-void UPlayerGoldWidget::SetViewModel(UPlayerResourceViewModel* InViewModel)
-{
-    UnbindViewModel();
-    PlayerResourceViewModel = InViewModel;
-    BindViewModel();
 }
 
 void UPlayerGoldWidget::BindViewModel()

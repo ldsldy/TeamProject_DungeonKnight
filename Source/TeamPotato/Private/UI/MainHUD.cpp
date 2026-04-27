@@ -3,7 +3,6 @@
 
 #include "UI/MainHUD.h"
 #include "UI/Player/MainHUDWidget.h"
-#include "Subsystem/MVVMSubsystem.h"
 
 void AMainHUD::BeginPlay()
 {
@@ -15,10 +14,7 @@ void AMainHUD::BeginPlay()
     // 메인 HUD 위젯 초기화 및 뷰포트에 추가
     if (MainHUDWidget)
     {
-        if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
-        {
-            MainHUDWidget->InitializeViewModels(Subsystem);
-        }
+        MainHUDWidget->InitializeViewModels(nullptr);
 
         MainHUDWidget->AddToViewport();
     }
@@ -28,10 +24,7 @@ void AMainHUD::TryShowBossWidget()
 {
     if (MainHUDWidget)
     {
-        if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
-        {
-            MainHUDWidget->ShowBossWidget(Subsystem);
-        }
+        MainHUDWidget->ShowBossWidget(nullptr);
     }
 }
 
@@ -39,9 +32,6 @@ void AMainHUD::TryHideBossWidget()
 {
     if (MainHUDWidget)
     {
-        if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
-        {
-            MainHUDWidget->HideBossWidget(Subsystem);
-        }
+        MainHUDWidget->HideBossWidget(nullptr);
     }
 }

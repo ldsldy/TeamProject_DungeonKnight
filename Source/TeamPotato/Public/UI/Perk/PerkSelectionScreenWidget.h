@@ -22,10 +22,6 @@ UCLASS()
 class TEAMPOTATO_API UPerkSelectionScreenWidget : public UUserWidget
 {
 	GENERATED_BODY()
-    
-public:
-    //UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UPerkViewModel* InViewModel);
 
 protected:
 	virtual void NativeConstruct() override;

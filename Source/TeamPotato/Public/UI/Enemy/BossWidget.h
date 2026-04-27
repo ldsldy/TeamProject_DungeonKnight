@@ -16,13 +16,10 @@ UCLASS()
 class TEAMPOTATO_API UBossWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-    UFUNCTION()
-    void SetViewModel(UEnemyViewModel* InViewModel);
 
 private:
     virtual void NativeConstruct() override;
+    virtual void NativeDestruct() override;
 
     void BindViewModel();
     void UnbindViewModel();

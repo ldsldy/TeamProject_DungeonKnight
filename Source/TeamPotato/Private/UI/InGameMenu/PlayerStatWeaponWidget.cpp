@@ -4,12 +4,24 @@
 #include "UI/InGameMenu/PlayerStatWeaponWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
 #include "Data/WeaponDataAsset.h"
 
 void UPlayerStatWeaponWidget::NativeConstruct()
 {
     Super::NativeConstruct();
+
+    if (!WeaponViewModel)
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+            {
+                WeaponViewModel = Subsystem->GetWeaponViewModel();
+            }
+        }
+    }
 
     BindViewModel();
 }
@@ -37,13 +49,6 @@ void UPlayerStatWeaponWidget::UpdateSubWeaponIcon(UWeaponDataAsset* InDataAsset)
         SubWeaponIcon->SetBrushFromTexture(InDataAsset->WeaponIcon);
         SubWeaponName->SetText(InDataAsset->WeaponName);
     }
-}
-
-void UPlayerStatWeaponWidget::SetViewModel(UWeaponViewModel* InViewModel)
-{
-    UnbindViewModel();
-    WeaponViewModel = InViewModel;
-    BindViewModel();
 }
 
 void UPlayerStatWeaponWidget::BindViewModel()

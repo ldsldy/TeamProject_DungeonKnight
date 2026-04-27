@@ -3,6 +3,7 @@
 
 #include "UI/Perk/InventoryPerkTileWidget.h"
 #include "Data/Object/PerkDataObject.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/PerkViewModel.h"
 #include "Components/TileView.h"
 
@@ -10,11 +11,24 @@ void UInventoryPerkTileWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+    if (!PerkViewModel)
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+            {
+                PerkViewModel = Subsystem->GetPerkViewModel();
+            }
+        }
+    }
+
 	if (PerkTileView)
 	{
 		PerkTileView->ClearListItems();
 		PerkTileView->OnItemIsHoveredChanged().AddUObject(this, &UInventoryPerkTileWidget::OnPerkitemHoveredChanged);
 	}
+
+    BindViewModel();
 }
 
 void UInventoryPerkTileWidget::NativeDestruct()
@@ -29,17 +43,9 @@ void UInventoryPerkTileWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-
-void UInventoryPerkTileWidget::SetViewModel(UPerkViewModel* InViewModel)
-{
-    UnbindViewModel();
-    PerkViewModel = InViewModel;
-    BindViewModel();
-}
-
 void UInventoryPerkTileWidget::BindViewModel()
 {
-    if (PerkViewModel)
+    if (PerkViewModel && PerkTileView)
     {
         // Model -> ViewModel 바인딩
         PerkViewModel->OnPerkEquipped.AddDynamic(this, &UInventoryPerkTileWidget::LoadPerkDataFromDataAsset);
@@ -48,7 +54,7 @@ void UInventoryPerkTileWidget::BindViewModel()
 }
 void UInventoryPerkTileWidget::UnbindViewModel()
 {
-    if (PerkViewModel)
+    if (PerkViewModel && PerkTileView)
     {
         PerkViewModel->OnPerkEquipped.RemoveDynamic(this, &UInventoryPerkTileWidget::LoadPerkDataFromDataAsset);
         PerkViewModel->OnTryAllPerkClear.RemoveDynamic(PerkTileView, &UTileView::ClearListItems);

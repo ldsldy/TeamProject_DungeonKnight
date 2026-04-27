@@ -7,20 +7,23 @@
 #include "InputMappingContext.h"
 #include "TeamPotato/Logic/DungeonGanarator.h"
 #include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/PerkViewModel.h"
 #include "Subsystem/ViewModel/MinimapViewModel.h"
 #include "Subsystem/CharacterSubsystem.h"
+#include "UI/BaseLayerWidget.h"
 #include "UI/InGameMenu/InGameMenuWidget.h"
-#include "UI/InGameMenu/PlayerStatWeaponWidget.h"
 #include "UI/Perk/PerkSelectionScreenWidget.h"
-#include "UI/InGameMenu/MenuPlayerStatWidget.h"
-#include "UI/InGameMenu/PlayerStatPanelWidget.h"
-#include "UI/Perk/InventoryPerkTileWidget.h"
 #include "UI/InGameMenu/PlayerKilledWidget.h"
 #include "UI/Minimap/MinimapWidget.h"
+#include "UI/UIWidgetLayerTags.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/TestCharacter.h"
 #include "Common/MyGameSettings.h"
+
+ATestPlayerController::ATestPlayerController()
+{
+    OpenPerkSelectionLayerTags.ActivateTags.AddTag(TeamPotatoGameplayTags::UI_Layer_PerkSelection);
+    ClosePerkSelectionLayerTags.DeactivateTags.AddTag(TeamPotatoGameplayTags::UI_Layer_PerkSelection);
+}
 
 void ATestPlayerController::OnPossess(APawn* InPawn)
 {
@@ -40,6 +43,20 @@ void ATestPlayerController::BeginPlay()
 		UE_LOG(LogTemp, Log, TEXT("Player Controller Subsystem Available"));
 		Subsystem->AddMappingContext(DefaultMappingContext, priority);
 	}
+
+    // 베이스 레이어 위젯 생성 (설정이 없으면 C++ 기본 클래스로 생성)
+    TSubclassOf<UBaseLayerWidget> ResolvedBaseLayerClass = BaseLayerWidgetClass;
+    if (!ResolvedBaseLayerClass)
+    {
+        ResolvedBaseLayerClass = UBaseLayerWidget::StaticClass();
+    }
+
+    BaseLayerWidget = CreateWidget<UBaseLayerWidget>(this, ResolvedBaseLayerClass);
+    if (BaseLayerWidget)
+    {
+        BaseLayerWidget->AddToViewport(0);
+        BaseLayerWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+    }
 
     // 인게임 메뉴 위젯 생성
     if (InGameMenuWidgetClass)
@@ -76,44 +93,28 @@ void ATestPlayerController::BeginPlay()
         MinimapWidgetRef->SetVisibility(ESlateVisibility::Collapsed);
     }
 
-    // MVVM 서브시스템으로 위젯들에 뷰모델 주입
-    if (UMVVMSubsystem* MVVMSubsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
+    // 퍽 선택 화면 생성 및 베이스 레이어 등록
+    if (BaseLayerWidget && PerkSelectionScreenClass)
     {
-        UPlayerResourceViewModel* ResourceViewModel = MVVMSubsystem->GetPlayerStatusViewModel();
-
-        // 퍽 선택 화면 위젯 바인딩 && 퍽 인벤토리 뷰모델 설정
-        if (PerkSelectionScreenClass)
+        if (UPerkSelectionScreenWidget* PerkSelectionScreen = Cast<UPerkSelectionScreenWidget>(
+            BaseLayerWidget->RegisterLayerWidgetClass(TeamPotatoGameplayTags::UI_Layer_PerkSelection, PerkSelectionScreenClass, 5)))
         {
-            PerkSelectionScreen = CreateWidget<UPerkSelectionScreenWidget>(this, PerkSelectionScreenClass);
-            PerkSelectionScreen->SetViewModel(MVVMSubsystem->GetPerkViewModel());
             PerkSelectionScreen->OnPerkSelected.AddDynamic(this, &ATestPlayerController::RemovePerkSelectionScreenFromViewport);
         }
+    }
 
-        // 인게임 메뉴 처리
-        if (InGameMenuWidget)
-        {
-            // 인게임 메뉴의 플레이어 정보 패널 델리게이트
-            InGameMenuWidget->GetPlayingPlayerStatPanel()
-                ->GetInventoryPerkTileWidget()
-                ->SetViewModel(MVVMSubsystem->GetPerkViewModel());
+    // 인게임 메뉴 처리
+    if (InGameMenuWidget)
+    {
+        InGameMenuWidget->OnInGameMenuClosed.AddDynamic(this, &ATestPlayerController::OnPauseInput);
+    }
 
-            InGameMenuWidget->GetPlayingPlayerStatPanel()
-                ->GetPlayerWeaponWidget()
-                ->SetViewModel(MVVMSubsystem->GetWeaponViewModel());
-
-            InGameMenuWidget->GetPlayingPlayerStatPanel()
-                ->GetPlayerStatPanelWidget()
-                ->SetViewModel(ResourceViewModel, MVVMSubsystem->GetWeaponViewModel());
-
-            // 계속하기 버튼 처리
-            InGameMenuWidget->OnInGameMenuClosed.AddDynamic(this, &ATestPlayerController::OnPauseInput);
-        }
-
-        // 미니맵 위젯 처리
-        if (MinimapWidgetRef)
+    // 미니맵 위치 업데이트는 컨트롤러에서 ViewModel 참조를 유지한다.
+    if (MinimapWidgetRef)
+    {
+        if (UMVVMSubsystem* MVVMSubsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
         {
             MinimapViewModel = MVVMSubsystem->GetMinimapViewModel();
-            MinimapWidgetRef->SetViewModel(MinimapViewModel);
             MinimapViewModel->OnMinimapInitialized.AddDynamic(this, &ATestPlayerController::UpdateMinimapPlayerPosition);
         }
     }
@@ -138,6 +139,15 @@ void ATestPlayerController::BeginPlay()
 void ATestPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     GetWorldTimerManager().ClearTimer(MinimapUpdateTimer);
+
+    if (BaseLayerWidget)
+    {
+        if (UPerkSelectionScreenWidget* PerkSelectionScreen = Cast<UPerkSelectionScreenWidget>(
+            BaseLayerWidget->FindLayerWidget(TeamPotatoGameplayTags::UI_Layer_PerkSelection)))
+        {
+            PerkSelectionScreen->OnPerkSelected.RemoveDynamic(this, &ATestPlayerController::RemovePerkSelectionScreenFromViewport);
+        }
+    }
 
     Super::EndPlay(EndPlayReason);
 }
@@ -183,7 +193,7 @@ void ATestPlayerController::OnPauseInput()
         SetPause(true);
 
         // Ui에 입력 포커스 설정
-        SetGameAndUIInputMode();
+        SetGameAndUIInputMode(InGameMenuWidget);
 
         InGameMenuWidget->SetVisibility(ESlateVisibility::Visible);
 
@@ -207,7 +217,7 @@ void ATestPlayerController::OnMinimapInput()
         //SetPause(true);
 
         // 미니맵 열기
-        SetGameAndUIInputMode();
+        SetGameAndUIInputMode(MinimapWidgetRef);
         bShowMouseCursor = false;
         MinimapWidgetRef->SetVisibility(ESlateVisibility::Visible);
         bIsMinimapOpen = true;
@@ -219,7 +229,7 @@ void ATestPlayerController::OnAddPlayerKilledWidget()
     //UE_LOG(LogTemp, Log, TEXT("Player Killed Widget Added to Viewport"));
     if (PlayerKilledWidget)
     {
-        SetGameAndUIInputMode();
+        SetGameAndUIInputMode(PlayerKilledWidget);
         PlayerKilledWidget->AddToViewport(100);
     }
 }
@@ -227,20 +237,23 @@ void ATestPlayerController::OnAddPlayerKilledWidget()
 // 델리게이트로 스테이지 클리어 후 뷰포트에 추가 !!!!!!!!!
 void ATestPlayerController::AddPerkSelectionScreenToViewport()
 {
-    if (PerkSelectionScreen)
+    if (!BaseLayerWidget)
     {
-        SetGameAndUIInputMode();
-        PerkSelectionScreen->AddToViewport(5);
+        return;
     }
+
+    BaseLayerWidget->ApplyLayerActivation(OpenPerkSelectionLayerTags);
+    SetGameAndUIInputMode(BaseLayerWidget->FindLayerWidget(TeamPotatoGameplayTags::UI_Layer_PerkSelection));
 }
 
 void ATestPlayerController::RemovePerkSelectionScreenFromViewport()
 {
-    if (PerkSelectionScreen)
+    if (BaseLayerWidget)
     {
-        SetGameOnlyInputMode();
-        PerkSelectionScreen->RemoveFromParent();
+        BaseLayerWidget->ApplyLayerActivation(ClosePerkSelectionLayerTags);
     }
+
+    SetGameOnlyInputMode();
 }
 
 void ATestPlayerController::SetGameOnlyInputMode()
@@ -251,10 +264,21 @@ void ATestPlayerController::SetGameOnlyInputMode()
     SetShowMouseCursor(false);
 }
 
-void ATestPlayerController::SetGameAndUIInputMode()
+void ATestPlayerController::SetGameAndUIInputMode(UUserWidget* FocusWidget)
 {
     FInputModeGameAndUI InputMode;
-    InputMode.SetWidgetToFocus(InGameMenuWidget->TakeWidget());
+
+    UUserWidget* TargetFocusWidget = FocusWidget;
+    if (!TargetFocusWidget)
+    {
+        TargetFocusWidget = InGameMenuWidget;
+    }
+
+    if (TargetFocusWidget)
+    {
+        InputMode.SetWidgetToFocus(TargetFocusWidget->TakeWidget());
+    }
+
     SetInputMode(InputMode);
     SetShowMouseCursor(true);
 }

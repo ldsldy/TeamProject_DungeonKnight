@@ -4,7 +4,9 @@
 #include "UI/InGameMenu/PlayerStatPanelWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/PlayerResourceViewModel.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
 #include "Data/WeaponDataAsset.h"
 
@@ -12,6 +14,23 @@ void UPlayerStatPanelWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
+    if (UGameInstance* GameInstance = GetGameInstance())
+    {
+        if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+        {
+            if (!PlayerStatusViewModel)
+            {
+                PlayerStatusViewModel = Subsystem->GetPlayerStatusViewModel();
+            }
+
+            if (!PlayerWeaponViewModel)
+            {
+                PlayerWeaponViewModel = Subsystem->GetWeaponViewModel();
+            }
+        }
+    }
+
+    BindViewModel();
 }
 
 void UPlayerStatPanelWidget::NativeDestruct()
@@ -19,16 +38,6 @@ void UPlayerStatPanelWidget::NativeDestruct()
     UnbindViewModel();
 
     Super::NativeDestruct();
-}
-
-void UPlayerStatPanelWidget::SetViewModel(UPlayerResourceViewModel* InPlayerViewModel, UWeaponViewModel* InWeaponViewModel)
-{
-    UnbindViewModel();
-
-    PlayerStatusViewModel = InPlayerViewModel;
-    PlayerWeaponViewModel = InWeaponViewModel;
-
-    BindViewModel();
 }
 
 void UPlayerStatPanelWidget::BindViewModel()

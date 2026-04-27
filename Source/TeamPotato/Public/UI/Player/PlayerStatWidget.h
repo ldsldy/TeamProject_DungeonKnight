@@ -17,11 +17,6 @@ UCLASS()
 class TEAMPOTATO_API UPlayerStatWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-    // 외부에서 ViewModel 주입
-    UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UPlayerResourceViewModel* InViewModel);
 
 protected:
 	virtual void NativeConstruct() override;

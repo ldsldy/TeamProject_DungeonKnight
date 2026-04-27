@@ -17,10 +17,6 @@ UCLASS()
 class TEAMPOTATO_API UMinimapWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-public:
-    UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UMinimapViewModel* InViewModel);
 
 protected:
     virtual void NativeConstruct() override;

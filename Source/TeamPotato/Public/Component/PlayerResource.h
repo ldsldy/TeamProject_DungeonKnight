@@ -8,17 +8,6 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerResourceScalarChanged, FName, Key, float, Value);
 
-namespace PlayerResourceScalarKeys
-{
-    TEAMPOTATO_API extern const FName HealthCurrent;
-    TEAMPOTATO_API extern const FName HealthMax;
-    TEAMPOTATO_API extern const FName EnergyCurrent;
-    TEAMPOTATO_API extern const FName EnergyMax;
-    TEAMPOTATO_API extern const FName Gold;
-    TEAMPOTATO_API extern const FName WalkSpeed;
-    TEAMPOTATO_API extern const FName AttackPower;
-}
-
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TEAMPOTATO_API UPlayerResource : public UActorComponent
 {

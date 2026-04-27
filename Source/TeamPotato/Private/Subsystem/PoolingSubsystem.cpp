@@ -15,6 +15,14 @@ void UPoolingSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UPoolingSubsystem::Deinitialize()
 {
+    // 데미지 팝업 액터 풀링 배열 정리
+    for (AEnemyDamagePopupActor* Actor : AvailableDamagePopupActors)
+    {
+        if (Actor)
+        {
+            Actor->Destroy();
+        }
+    }
 
     Super::Deinitialize();
 }
@@ -29,11 +37,10 @@ void UPoolingSubsystem::InitializeDamagePopupActorPool()
     TSubclassOf<AEnemyDamagePopupActor> DamagePopupWidgetClass = GameSettings->EnemyDamagePopupActorClass.LoadSynchronous();
 
     // 데미지 팝업 액터 풀링 초기화
-    for (int32 i = 0; i < DamagePopupActorPoolSize; i++)
+    while(AvailableDamagePopupActors.Num() < DamagePopupActorPoolSize)
     {
         AEnemyDamagePopupActor* DamagePopupActor 
             = GetWorld()->SpawnActor<AEnemyDamagePopupActor>(DamagePopupWidgetClass);
-
         if (DamagePopupActor)
         {
             // 보이지 않게 설정하고 사용 가능 배열에 추가
@@ -61,8 +68,17 @@ void UPoolingSubsystem::ReturnDamagePopupActorToPool(AEnemyDamagePopupActor* Dam
 {
     if (DamagePopupActor)
     {
-        // 사용 중인 배열에서 제거하고 사용 가능 배열에 다시 추가
+        // 사용 중인 배열에서 제거하고 사용 가능 배열에 다시 추가했을때, 풀 사이즈보다 작은 경우에만 반환
         UsedDamagePopupActor.Remove(DamagePopupActor);
-        AvailableDamagePopupActors.Add(DamagePopupActor);
+
+        if (AvailableDamagePopupActors.Num() < DamagePopupActorPoolSize)
+        {
+            AvailableDamagePopupActors.Add(DamagePopupActor);
+        }
+        else
+        {
+            // 풀 사이즈보다 많은 경우 액터를 파괴
+            DamagePopupActor->Destroy();
+        }
     }
 }

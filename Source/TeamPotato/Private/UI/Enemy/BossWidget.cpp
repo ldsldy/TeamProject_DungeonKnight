@@ -4,6 +4,7 @@
 #include "UI/Enemy/BossWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/EnemyViewModel.h"
 #include "TimerManager.h"
 
@@ -12,19 +13,25 @@ void UBossWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    //if (DelayBarCurveClass)
-    //{
-    //    DelayBarCurve = NewObject<UCurveFloat>(this, DelayBarCurveClass);
-    //}
+    if (!EnemyViewModel)
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+            {
+                EnemyViewModel = Subsystem->GetEnemyViewModel();
+            }
+        }
+    }
+
+    BindViewModel();
 }
 
-void UBossWidget::SetViewModel(UEnemyViewModel* InViewModel)
+void UBossWidget::NativeDestruct()
 {
     UnbindViewModel();
 
-    EnemyViewModel = InViewModel;
-
-    BindViewModel();
+    Super::NativeDestruct();
 }
 
 

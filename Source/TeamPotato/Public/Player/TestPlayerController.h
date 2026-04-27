@@ -5,15 +5,18 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
+#include "UI/BaseLayerWidget.h"
 #include "TestPlayerController.generated.h"
 
 class UInputMappingContext;
+class UBaseLayerWidget;
 class UPerkSelectionScreenWidget;
 class UPlayerKilledWidget;
 class UMinimapWidget;
 class UInGameMenuWidget;
 class UPerkDataAsset;
 class UMinimapViewModel;
+class UUserWidget;
 /**
  * 
  */
@@ -23,6 +26,8 @@ class TEAMPOTATO_API ATestPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+    ATestPlayerController();
+
     // 선택창을 뷰포트에 추가
     UFUNCTION(BlueprintCallable)
     void AddPerkSelectionScreenToViewport();
@@ -37,7 +42,7 @@ public:
     void SetUIOnlyInputMode();
 
     UFUNCTION(BlueprintCallable, Category = "Input")
-    void SetGameAndUIInputMode();
+    void SetGameAndUIInputMode(UUserWidget* FocusWidget = nullptr);
 
     // 스테이지와 챕터 정보를 받아서 원하는 스테이지와 챕터에서 퍽 선택 화면을 띄움
     UFUNCTION(BlueprintCallable, Category = "Perk|Selection")
@@ -104,11 +109,20 @@ private:
     // ===============================
     // --- 퍽 UI 관련 변수 ---
     // ===============================
-    UPROPERTY()
-    TObjectPtr<UPerkSelectionScreenWidget> PerkSelectionScreen;
-
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UPerkSelectionScreenWidget> PerkSelectionScreenClass;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<UBaseLayerWidget> BaseLayerWidgetClass;
+
+    UPROPERTY(Transient)
+    TObjectPtr<UBaseLayerWidget> BaseLayerWidget = nullptr;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI|Layer")
+    FLayerWidgetActivationContainer OpenPerkSelectionLayerTags;
+
+    UPROPERTY(EditDefaultsOnly, Category = "UI|Layer")
+    FLayerWidgetActivationContainer ClosePerkSelectionLayerTags;
 
     // ===============================
     // --- 사망 UI 위젯 관련 변수 ---

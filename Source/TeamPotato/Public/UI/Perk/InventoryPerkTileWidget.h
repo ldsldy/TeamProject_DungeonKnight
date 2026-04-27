@@ -19,10 +19,6 @@ class TEAMPOTATO_API UInventoryPerkTileWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-    // 외부에서 ViewModel 주입
-    UFUNCTION(BlueprintCallable, Category = "MVVM")
-    void SetViewModel(UPerkViewModel* InViewModel);
-
 	UFUNCTION()
 	void LoadPerkDataFromDataAsset(UPerkDataAsset* InData);
 

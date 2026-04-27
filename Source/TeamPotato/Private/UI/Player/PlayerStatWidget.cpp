@@ -4,12 +4,25 @@
 #include "UI/Player/PlayerStatWidget.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/ViewModel/PlayerResourceViewModel.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 #include "TimerManager.h"
 
 void UPlayerStatWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+    if (!PlayerStatusViewModel)
+    {
+        if (UGameInstance* GameInstance = GetGameInstance())
+        {
+            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
+            {
+                PlayerStatusViewModel = Subsystem->GetPlayerStatusViewModel();
+            }
+        }
+    }
 
     BindViewModel();
 }
@@ -19,13 +32,6 @@ void UPlayerStatWidget::NativeDestruct()
     UnbindViewModel();
 
 	Super::NativeDestruct();
-}
-
-void UPlayerStatWidget::SetViewModel(UPlayerResourceViewModel* InViewModel)
-{
-    UnbindViewModel();
-    PlayerStatusViewModel = InViewModel;
-    BindViewModel();
 }
 
 void  UPlayerStatWidget::BindViewModel()

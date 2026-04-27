@@ -5,20 +5,10 @@
 #include "Player/TestCharacter.h"
 #include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/CharacterSubsystem.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-
-namespace PlayerResourceScalarKeys
-{
-    const FName HealthCurrent(TEXT("HealthCurrent"));
-    const FName HealthMax(TEXT("HealthMax"));
-    const FName EnergyCurrent(TEXT("EnergyCurrent"));
-    const FName EnergyMax(TEXT("EnergyMax"));
-    const FName Gold(TEXT("Gold"));
-    const FName WalkSpeed(TEXT("WalkSpeed"));
-    const FName AttackPower(TEXT("AttackPower"));
-}
 
 // Sets default values for this component's properties
 UPlayerResource::UPlayerResource()
@@ -181,27 +171,27 @@ void UPlayerResource::BroadcastScalar(FName Key, float Value)
 // 최대 체력이나 현재 체력이 바뀌었을 때 뒤에 넣어서 브로드캐스트 해주는 함수
 void UPlayerResource::BroadcastHealthChanged()
 {
-    BroadcastScalar(PlayerResourceScalarKeys::HealthCurrent, Health);
-    BroadcastScalar(PlayerResourceScalarKeys::HealthMax, MaxHealth);
+    BroadcastScalar(PlayerResourceVMFields::HealthCurrent, Health);
+    BroadcastScalar(PlayerResourceVMFields::HealthMax, MaxHealth);
 }
 
 void UPlayerResource::BroadcastEnergyChanged()
 {
-    BroadcastScalar(PlayerResourceScalarKeys::EnergyCurrent, Energy);
-    BroadcastScalar(PlayerResourceScalarKeys::EnergyMax, MaxEnergy);
+    BroadcastScalar(PlayerResourceVMFields::EnergyCurrent, Energy);
+    BroadcastScalar(PlayerResourceVMFields::EnergyMax, MaxEnergy);
 }
 
 void UPlayerResource::BroadcastGoldChanged()
 {
-    BroadcastScalar(PlayerResourceScalarKeys::Gold, static_cast<float>(CurrentGold));
+    BroadcastScalar(PlayerResourceVMFields::Gold, static_cast<float>(CurrentGold));
 }
 
 void UPlayerResource::BroadcastWalkSpeedChanged()
 {
-    BroadcastScalar(PlayerResourceScalarKeys::WalkSpeed, WalkSpeed);
+    BroadcastScalar(PlayerResourceVMFields::WalkSpeed, WalkSpeed);
 }
 
 void UPlayerResource::BroadcastAttackPowerChanged()
 {
-    BroadcastScalar(PlayerResourceScalarKeys::AttackPower, AttackPower);
+    BroadcastScalar(PlayerResourceVMFields::AttackPower, AttackPower);
 }

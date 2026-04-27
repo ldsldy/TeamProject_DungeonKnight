@@ -8,22 +8,6 @@
 
 class UPlayerResource;
 
-// 플레이어 리소스 뷰모델에서 사용할 필드 이름 상수들
-namespace PlayerResourceVMFields
-{
-    TEAMPOTATO_API extern const FName HealthCurrent;
-    TEAMPOTATO_API extern const FName HealthMax;
-    TEAMPOTATO_API extern const FName HealthPercent;
-
-    TEAMPOTATO_API extern const FName EnergyCurrent;
-    TEAMPOTATO_API extern const FName EnergyMax;
-    TEAMPOTATO_API extern const FName EnergyPercent;
-
-    TEAMPOTATO_API extern const FName Gold;
-    TEAMPOTATO_API extern const FName WalkSpeed;
-    TEAMPOTATO_API extern const FName AttackPower;
-}
-
 /**
  * 
  */

@@ -74,6 +74,7 @@ void AMinimapSceneCapture2D::OnMinimapCapture(FVector2D InMinPoint, FVector2D In
     // 씬 캡처 실행
     CaptureComp->CaptureScene();
 
+    // 캡처된 미니맵을 매니저에 전달 (미니맵 텍스처, 월드 최소 좌표(기준), 던전 길이)
     FVector2D AdjustedMinPoint = DungeonCenter - FVector2D(CaptureOrthoWidth / 2.0f, CaptureOrthoWidth / 2.0f);
 
     MinimapManager->InitializeMinimapManager(
