@@ -43,7 +43,7 @@ void AMainHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AMainHUD::TryPerkSelectionScreen(int32 InStage, int32 InChapter)
 {
-    if (InChapter == 2 || InChapter == 4)
+    if (InChapter == 1 || InChapter == 3)
     {
         AddPerkSelectionScreenToViewport();
     }
