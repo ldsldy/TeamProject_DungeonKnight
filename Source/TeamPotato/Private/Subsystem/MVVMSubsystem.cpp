@@ -8,7 +8,6 @@
 #include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 #include "Subsystem/ViewModel/PerkViewModel.h"
 #include "Subsystem/ViewModel/WeaponViewModel.h"
-#include "Subsystem/ViewModel/MinimapViewModel.h"
 #include "Subsystem/ViewModel/EnemyViewModel.h"
 #include "Enemy/BossBase.h"
 
@@ -32,11 +31,6 @@ void UMVVMSubsystem::Deinitialize()
     if (WeaponViewModel)
     {
         WeaponViewModel->Deinitialize();
-    }
-
-    if (MinimapViewModel)
-    {
-        MinimapViewModel->Deinitialize();
     }
 
     if (EnemyViewModel)
@@ -78,15 +72,6 @@ UWeaponViewModel* UMVVMSubsystem::GetWeaponViewModel()
         WeaponViewModel = NewObject<UWeaponViewModel>(this);
     }
     return WeaponViewModel;
-}
-
-UMinimapViewModel* UMVVMSubsystem::GetMinimapViewModel()
-{
-    if (!MinimapViewModel)
-    {
-        MinimapViewModel = NewObject<UMinimapViewModel>(this);
-    }
-    return MinimapViewModel;
 }
 
 UEnemyViewModel* UMVVMSubsystem::GetEnemyViewModel()

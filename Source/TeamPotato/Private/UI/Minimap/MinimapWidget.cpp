@@ -2,73 +2,66 @@
 
 
 #include "UI/Minimap/MinimapWidget.h"
+
 #include "Components/Image.h"
 #include "Materials/MaterialInstanceDynamic.h"
-#include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
-#include "Subsystem/ViewModel/MinimapViewModel.h"
+#include "Subsystem/MinimapSubsystem.h"
 
 void UMinimapWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    if (!MinimapViewModel)
+    if (!MinimapSubsystem)
     {
-        if (UGameInstance* GameInstance = GetGameInstance())
+        if (UWorld* World = GetWorld())
         {
-            if (UMVVMSubsystem* Subsystem = GameInstance->GetSubsystem<UMVVMSubsystem>())
-            {
-                MinimapViewModel = Subsystem->GetMinimapViewModel();
-            }
+            MinimapSubsystem = World->GetSubsystem<UMinimapSubsystem>();
         }
     }
 
-    BindViewModel();
+    BindMinimapSubsystem();
 }
 
 void UMinimapWidget::NativeDestruct()
 {
-    UnbindViewModel();
+    UnbindMinimapSubsystem();
 
     Super::NativeDestruct();
 }
 
-void UMinimapWidget::BindViewModel()
+void UMinimapWidget::BindMinimapSubsystem()
 {
-    if (MinimapViewModel && !bIsViewModelBound)
+    if (MinimapSubsystem && !bIsMinimapSubsystemBound)
     {
-        MinimapViewModel->OnFieldChanged.AddDynamic(this, &UMinimapWidget::HandleViewModelFieldChanged);
-        bIsViewModelBound = true;
+        MinimapSubsystem->OnMinimapInitialized.AddDynamic(this, &UMinimapWidget::HandleMinimapInitialized);
+        bIsMinimapSubsystemBound = true;
 
         UpdateMinimapMaterial();
     }
 }
 
-void UMinimapWidget::UnbindViewModel()
+void UMinimapWidget::UnbindMinimapSubsystem()
 {
-    if (MinimapViewModel && bIsViewModelBound)
+    if (MinimapSubsystem && bIsMinimapSubsystemBound)
     {
-        MinimapViewModel->OnFieldChanged.RemoveDynamic(this, &UMinimapWidget::HandleViewModelFieldChanged);
-        bIsViewModelBound = false;
+        MinimapSubsystem->OnMinimapInitialized.RemoveDynamic(this, &UMinimapWidget::HandleMinimapInitialized);
+        bIsMinimapSubsystemBound = false;
     }
 }
 
-void UMinimapWidget::HandleViewModelFieldChanged(FName FieldName)
+void UMinimapWidget::HandleMinimapInitialized()
 {
-    if (FieldName == MinimapVMFields::IsInitialized)
-    {
-        UpdateMinimapMaterial();
-    }
+    UpdateMinimapMaterial();
 }
 
 void UMinimapWidget::UpdateMinimapMaterial()
 {
-    if (!MinimapViewModel || !MinimapImage || !MinimapViewModel->IsInitialized())
+    if (!MinimapSubsystem || !MinimapImage || !MinimapSubsystem->IsInitialized())
     {
         return;
     }
 
-    UMaterialInstanceDynamic* MinimapMaterial = MinimapViewModel->GetMinimapMaterial();
+    UMaterialInstanceDynamic* MinimapMaterial = MinimapSubsystem->GetMinimapMaterial();
     if (MinimapMaterial)
     {
         MinimapImage->SetBrushFromMaterial(MinimapMaterial);

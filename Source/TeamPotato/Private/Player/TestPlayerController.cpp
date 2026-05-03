@@ -5,9 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubSystems.h"
 #include "InputMappingContext.h"
-#include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
-#include "Subsystem/ViewModel/MinimapViewModel.h"
+#include "Subsystem/MinimapSubsystem.h"
 #include "Subsystem/CharacterSubsystem.h"
 #include "UI/InGameMenu/InGameMenuWidget.h"
 #include "UI/InGameMenu/PlayerKilledWidget.h"
@@ -15,10 +13,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Player/TestCharacter.h"
 #include "Common/MyGameSettings.h"
-
-ATestPlayerController::ATestPlayerController()
-{
-}
 
 void ATestPlayerController::OnPossess(APawn* InPawn)
 {
@@ -85,10 +79,10 @@ void ATestPlayerController::BeginPlay()
     // 미니맵 위치 업데이트는 컨트롤러에서 ViewModel 참조를 유지한다.
     if (MinimapWidgetRef)
     {
-        if (UMVVMSubsystem* MVVMSubsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
+        MinimapSubsystem = GetWorld()->GetSubsystem<UMinimapSubsystem>();
+        if (MinimapSubsystem)
         {
-            MinimapViewModel = MVVMSubsystem->GetMinimapViewModel();
-            MinimapViewModel->OnFieldChanged.AddDynamic(this, &ATestPlayerController::HandleMinimapViewModelFieldChanged);
+            MinimapSubsystem->OnMinimapInitialized.AddDynamic(this, &ATestPlayerController::HandleMinimapInitialized);
         }
     }
 
@@ -113,9 +107,9 @@ void ATestPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     GetWorldTimerManager().ClearTimer(MinimapUpdateTimer);
 
-    if (MinimapViewModel)
+    if (MinimapSubsystem)
     {
-        MinimapViewModel->OnFieldChanged.RemoveDynamic(this, &ATestPlayerController::HandleMinimapViewModelFieldChanged);
+        MinimapSubsystem->OnMinimapInitialized.RemoveDynamic(this, &ATestPlayerController::HandleMinimapInitialized);
     }
 
     Super::EndPlay(EndPlayReason);
@@ -257,28 +251,22 @@ void ATestPlayerController::IsMinimapUpdateThresholdReached()
 // --- 미니맵 플레이어 위치 업데이트 ---
 void ATestPlayerController::UpdateMinimapPlayerPosition()
 {
-    if (!MinimapViewModel)
+    if (!MinimapSubsystem)
     {
-        if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
-        {
-            MinimapViewModel = Subsystem->GetMinimapViewModel();
-        }
+        MinimapSubsystem = GetWorld()->GetSubsystem<UMinimapSubsystem>();
     }
 
-    if (MinimapViewModel)
+    if (MinimapSubsystem && MinimapSubsystem->IsInitialized())
     {
-        MinimapViewModel->UpdatePlayerPosition(CurrentPawnLocation, CurrentPawnYaw);
+        MinimapSubsystem->UpdatePlayerPosition(CurrentPawnLocation, CurrentPawnYaw);
         LastPawnLocation = CurrentPawnLocation;
         LastPawnYaw = CurrentPawnYaw;
     }
 }
 
-void ATestPlayerController::HandleMinimapViewModelFieldChanged(FName FieldName)
+void ATestPlayerController::HandleMinimapInitialized()
 {
-    if (FieldName == MinimapVMFields::IsInitialized)
-    {
-        UpdateMinimapPlayerPosition();
-    }
+    UpdateMinimapPlayerPosition();
 }
 
 void ATestPlayerController::SetUIOnlyInputMode()

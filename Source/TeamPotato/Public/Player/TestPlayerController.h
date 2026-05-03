@@ -11,7 +11,7 @@ class UInputMappingContext;
 class UPlayerKilledWidget;
 class UMinimapWidget;
 class UInGameMenuWidget;
-class UMinimapViewModel;
+class UMinimapSubsystem;
 class UUserWidget;
 /**
  * 
@@ -22,9 +22,6 @@ class TEAMPOTATO_API ATestPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-    ATestPlayerController();
-
-    // 선택창을 뷰포트에 추가
     UFUNCTION(BlueprintCallable, Category = "Input")
     void SetGameOnlyInputMode();
 
@@ -54,7 +51,7 @@ protected:
     void UpdateMinimapPlayerPosition();
 
     UFUNCTION()
-    void HandleMinimapViewModelFieldChanged(FName FieldName);
+    void HandleMinimapInitialized();
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InputAction")
@@ -113,7 +110,7 @@ private:
     UPROPERTY(EditAnywhere, Category = "UI")
     TObjectPtr<UMinimapWidget> MinimapWidgetRef = nullptr;
 
-    TObjectPtr<UMinimapViewModel> MinimapViewModel = nullptr;
+    TObjectPtr<UMinimapSubsystem> MinimapSubsystem = nullptr;
 
     FVector CurrentPawnLocation = FVector::ZeroVector;
     float CurrentPawnYaw = 0.f;

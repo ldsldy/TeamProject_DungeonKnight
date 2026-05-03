@@ -2,9 +2,7 @@
 
 
 #include "UI/TestUIController.h"
-#include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
-#include "Subsystem/ViewModel/MinimapViewModel.h"
+#include "Subsystem/MinimapSubsystem.h"
 #include "UI/Minimap/MinimapWidget.h"
 
 void ATestUIController::BeginPlay()
@@ -21,13 +19,10 @@ void ATestUIController::BeginPlay()
             MinimapWidget->AddToViewport(10);
 
             // 뷰모델 설정
-            if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
+            MinimapSubsystem = GetWorld()->GetSubsystem<UMinimapSubsystem>();
+            if (MinimapSubsystem)
             {
-                if (!MinimapViewModel)
-                {
-                    MinimapViewModel = Subsystem->GetMinimapViewModel();
-                    MinimapViewModel->OnFieldChanged.AddDynamic(this, &ATestUIController::HandleMinimapViewModelFieldChanged);
-                }
+                MinimapSubsystem->OnMinimapInitialized.AddDynamic(this, &ATestUIController::HandleMinimapInitialized);
             }
         }
     }
@@ -46,9 +41,9 @@ void ATestUIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     GetWorldTimerManager().ClearTimer(MinimapUpdateTimer);
 
-    if (MinimapViewModel)
+    if (MinimapSubsystem)
     {
-        MinimapViewModel->OnFieldChanged.RemoveDynamic(this, &ATestUIController::HandleMinimapViewModelFieldChanged);
+        MinimapSubsystem->OnMinimapInitialized.RemoveDynamic(this, &ATestUIController::HandleMinimapInitialized);
     }
 
     Super::EndPlay(EndPlayReason);
@@ -91,26 +86,20 @@ void ATestUIController::IsMinimapUpdateThresholdReached()
 
 void ATestUIController::UpdateMinimapPlayerPosition()
 {
-    if (!MinimapViewModel)
+    if (!MinimapSubsystem)
     {
-        if (UMVVMSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UMVVMSubsystem>())
-        {
-            MinimapViewModel = Subsystem->GetMinimapViewModel();
-        }
+        MinimapSubsystem = GetWorld()->GetSubsystem<UMinimapSubsystem>();
     }
 
-    if (MinimapViewModel)
+    if (MinimapSubsystem && MinimapSubsystem->IsInitialized())
     {
-        MinimapViewModel->UpdatePlayerPosition(CurrentPawnLocation, CurrentPawnYaw);
+        MinimapSubsystem->UpdatePlayerPosition(CurrentPawnLocation, CurrentPawnYaw);
         LastPawnLocation = CurrentPawnLocation;
         LastPawnYaw = CurrentPawnYaw;
     }
 }
 
-void ATestUIController::HandleMinimapViewModelFieldChanged(FName FieldName)
+void ATestUIController::HandleMinimapInitialized()
 {
-    if (FieldName == MinimapVMFields::IsInitialized)
-    {
-        UpdateMinimapPlayerPosition();
-    }
+    UpdateMinimapPlayerPosition();
 }

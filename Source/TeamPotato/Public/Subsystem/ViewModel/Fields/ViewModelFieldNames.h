@@ -38,8 +38,3 @@ namespace EnemyVMFields
     TEAMPOTATO_API extern const FName HealthPercent;
     TEAMPOTATO_API extern const FName IsVisible;
 }
-
-namespace MinimapVMFields
-{
-    TEAMPOTATO_API extern const FName IsInitialized;
-}

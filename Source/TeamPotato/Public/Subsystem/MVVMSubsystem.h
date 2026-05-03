@@ -8,7 +8,6 @@
 
 class ABossBase;
 class UEnemyViewModel;
-class UMinimapViewModel;
 class UPerkComponent;
 class UPerkViewModel;
 class UPlayerResource;
@@ -33,9 +32,6 @@ public:
 
     UFUNCTION(BlueprintPure)
     UWeaponViewModel* GetWeaponViewModel();
-
-    UFUNCTION(BlueprintPure)
-    UMinimapViewModel* GetMinimapViewModel();
 
     UFUNCTION(BlueprintPure)
     UEnemyViewModel* GetEnemyViewModel();
@@ -77,9 +73,6 @@ private:
 
     UPROPERTY()
     TObjectPtr<UWeaponViewModel> WeaponViewModel;
-
-    UPROPERTY()
-    TObjectPtr<UMinimapViewModel> MinimapViewModel;
 
     UPROPERTY()
     TObjectPtr<UEnemyViewModel> EnemyViewModel;

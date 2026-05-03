@@ -6,10 +6,9 @@
 #include "GameFramework/PlayerController.h"
 #include "TestUIController.generated.h"
 
-class UMVVMSubsystem;
 class UInGameMenuWidget;
 class UMinimapWidget;
-class UMinimapViewModel;
+class UMinimapSubsystem;
 /**
  * 
  */
@@ -31,7 +30,7 @@ protected:
     void UpdateMinimapPlayerPosition();
 
     UFUNCTION()
-    void HandleMinimapViewModelFieldChanged(FName FieldName);
+    void HandleMinimapInitialized();
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -41,7 +40,7 @@ protected:
     TObjectPtr<UMinimapWidget> MinimapWidget = nullptr;
 
 private:
-    TObjectPtr<UMinimapViewModel> MinimapViewModel = nullptr;
+    TObjectPtr<UMinimapSubsystem> MinimapSubsystem = nullptr;
 
     FVector CurrentPawnLocation = FVector::ZeroVector;
     float CurrentPawnYaw = 0.f;

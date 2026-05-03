@@ -8,12 +8,12 @@
 #include "Components/BoxComponent.h"
 #include "TimerManager.h"
 #include "Door.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Enemy/EnemyCharacter.h"
 #include "Item/Weapon/WeaponBoxActor.h"
-#include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/GameStateSubsystem.h"
-#include "Subsystem/ViewModel/MinimapViewModel.h"
+#include "Subsystem/MinimapSubsystem.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "UI/MainHUD.h"
 
@@ -30,10 +30,9 @@ void ADungeonGanarator::BeginPlay()
 {
 	Super::BeginPlay();
 
-    // MVVM 서브시스템에 자신을 등록
-    if(UMVVMSubsystem* Subsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UMVVMSubsystem>())
+    if (UMinimapSubsystem* MinimapSubsystem = GetWorld()->GetSubsystem<UMinimapSubsystem>())
     {
-        Subsystem->GetMinimapViewModel()->Initialize(this);
+        MinimapSubsystem->RegisterDungeonGenerator(this);
     }
 
     if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
@@ -74,9 +73,9 @@ void ADungeonGanarator::EndPlay(const EEndPlayReason::Type EndPlayReason)
         }
     }
 
-    if (UMVVMSubsystem* Subsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UMVVMSubsystem>())
+    if (UMinimapSubsystem* MinimapSubsystem = GetWorld()->GetSubsystem<UMinimapSubsystem>())
     {
-        Subsystem->GetMinimapViewModel()->Deinitialize();
+        MinimapSubsystem->UnregisterDungeonGenerator(this);
     }
 
     Super::EndPlay(EndPlayReason);

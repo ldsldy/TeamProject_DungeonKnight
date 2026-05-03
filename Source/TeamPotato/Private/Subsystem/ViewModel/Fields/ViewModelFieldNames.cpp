@@ -36,8 +36,3 @@ namespace EnemyVMFields
     const FName HealthPercent(TEXT("HealthPercent"));
     const FName IsVisible(TEXT("IsVisible"));
 }
-
-namespace MinimapVMFields
-{
-    const FName IsInitialized(TEXT("IsInitialized"));
-}

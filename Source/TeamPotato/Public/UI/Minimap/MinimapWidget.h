@@ -7,10 +7,10 @@
 #include "MinimapWidget.generated.h"
 
 class UImage;
-class UMinimapViewModel;
+class UMinimapSubsystem;
 
 /**
- * 
+ * Displays the minimap material owned by the minimap subsystem.
  */
 UCLASS()
 class TEAMPOTATO_API UMinimapWidget : public UUserWidget
@@ -22,12 +22,12 @@ protected:
     virtual void NativeDestruct() override;
 
 private:
-    void BindViewModel();
-    void UnbindViewModel();
+    void BindMinimapSubsystem();
+    void UnbindMinimapSubsystem();
     void UpdateMinimapMaterial();
 
     UFUNCTION()
-    void HandleViewModelFieldChanged(FName FieldName);
+    void HandleMinimapInitialized();
 
 protected:
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
@@ -35,7 +35,7 @@ protected:
 
 private:
     UPROPERTY()
-    TObjectPtr<UMinimapViewModel> MinimapViewModel;
+    TObjectPtr<UMinimapSubsystem> MinimapSubsystem;
 
-    bool bIsViewModelBound = false;
+    bool bIsMinimapSubsystemBound = false;
 };

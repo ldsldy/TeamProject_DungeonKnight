@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
-#include "UI/BaseLayerWidget.h"
 #include "MainHUD.generated.h"
 
 class UPerkSelectionScreenWidget;
@@ -18,8 +17,6 @@ class TEAMPOTATO_API AMainHUD : public AHUD
 	GENERATED_BODY()
 
 public:
-    AMainHUD();
-
     UFUNCTION(BlueprintCallable, Category = "Perk|Selection")
     void TryPerkSelectionScreen(int32 InStage, int32 InChapter);
 
@@ -43,15 +40,6 @@ private:
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UPerkSelectionScreenWidget> PerkSelectionScreenClass;
 
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
-    TSubclassOf<UBaseLayerWidget> BaseLayerWidgetClass;
-
-    UPROPERTY(Transient)
-    TObjectPtr<UBaseLayerWidget> BaseLayerWidget = nullptr;
-
-    UPROPERTY(EditDefaultsOnly, Category = "UI|Layer")
-    FLayerWidgetActivationContainer OpenPerkSelectionLayerTags;
-
-    UPROPERTY(EditDefaultsOnly, Category = "UI|Layer")
-    FLayerWidgetActivationContainer ClosePerkSelectionLayerTags;
+    UPROPERTY()
+    TObjectPtr<UPerkSelectionScreenWidget> PerkSelectionScreenWidget = nullptr;
 };
