@@ -13,7 +13,9 @@
 #include "Item/Weapon/WeaponBoxActor.h"
 #include "Subsystem/MVVMSubsystem.h"
 #include "Subsystem/GameStateSubsystem.h"
+#include "Subsystem/ViewModel/MinimapViewModel.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "UI/MainHUD.h"
 
 // Sets default values
 ADungeonGanarator::ADungeonGanarator()
@@ -31,7 +33,15 @@ void ADungeonGanarator::BeginPlay()
     // MVVM 서브시스템에 자신을 등록
     if(UMVVMSubsystem* Subsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UMVVMSubsystem>())
     {
-        Subsystem->RegisterDungeonGeneratorActor(this);
+        Subsystem->GetMinimapViewModel()->Initialize(this);
+    }
+
+    if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+    {
+        if (AMainHUD* MainHUD = Cast<AMainHUD>(PC->GetHUD()))
+        {
+            OnStageAndChapterChanged.AddDynamic(MainHUD, &AMainHUD::TryPerkSelectionScreen);
+        }
     }
 
     InitialRoomAmount = RoomAmount;
@@ -56,11 +66,20 @@ void ADungeonGanarator::BeginPlay()
 
 void ADungeonGanarator::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    Super::EndPlay(EndPlayReason);
+    if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+    {
+        if (AMainHUD* MainHUD = Cast<AMainHUD>(PC->GetHUD()))
+        {
+            OnStageAndChapterChanged.RemoveDynamic(MainHUD, &AMainHUD::TryPerkSelectionScreen);
+        }
+    }
+
     if (UMVVMSubsystem* Subsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UMVVMSubsystem>())
     {
-        Subsystem->UnregisterDungeonGeneratorActor(this);
+        Subsystem->GetMinimapViewModel()->Deinitialize();
     }
+
+    Super::EndPlay(EndPlayReason);
 }
 
 // Called every frame

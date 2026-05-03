@@ -2,13 +2,13 @@
 
 
 #include "UI/InGameMenu/PlayerStatPanelWidget.h"
-#include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
-#include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
-#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
-#include "Subsystem/ViewModel/WeaponViewModel.h"
+#include "Components/TextBlock.h"
 #include "Data/WeaponDataAsset.h"
+#include "Subsystem/MVVMSubsystem.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
+#include "Subsystem/ViewModel/WeaponViewModel.h"
 
 void UPlayerStatPanelWidget::NativeConstruct()
 {
@@ -42,48 +42,39 @@ void UPlayerStatPanelWidget::NativeDestruct()
 
 void UPlayerStatPanelWidget::BindViewModel()
 {
-    if (PlayerStatusViewModel && !bIsBound
-        && PlayerWeaponViewModel && !bIsBound)
+    if (!bIsBound && PlayerStatusViewModel && PlayerWeaponViewModel)
     {
-        UE_LOG(LogTemp, Warning, TEXT("UPlayerStatPanelWidget::BindViewModel - Binding to PlayerStatusViewModel"));
-
         PlayerStatusViewModel->OnFieldChanged.AddDynamic(this, &UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged);
-
-        UE_LOG(LogTemp, Warning, TEXT("UPlayerStatPanelWidget::BindViewModel - Binding to WeaponViewModel"));
-
-        PlayerWeaponViewModel->OnMainWeaponUpdate.AddDynamic(this, &UPlayerStatPanelWidget::UpdateWeaponDataUI);
+        PlayerWeaponViewModel->OnFieldChanged.AddDynamic(this, &UPlayerStatPanelWidget::HandleWeaponFieldChanged);
 
         bIsBound = true;
 
         UpdateHealthUI();
         UpdateEnergyUI();
         UpdateWalkSpeedUI();
+        UpdateWeaponDataUI();
     }
 }
 
 void UPlayerStatPanelWidget::UnbindViewModel()
 {
-    if(PlayerStatusViewModel && bIsBound)
+    if (!bIsBound)
+    {
+        return;
+    }
+
+    if (PlayerStatusViewModel)
     {
         PlayerStatusViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged);
     }
-    if(PlayerWeaponViewModel && bIsBound)
+
+    if (PlayerWeaponViewModel)
     {
-        PlayerWeaponViewModel->OnMainWeaponUpdate.RemoveDynamic(this, &UPlayerStatPanelWidget::UpdateWeaponDataUI);
+        PlayerWeaponViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerStatPanelWidget::HandleWeaponFieldChanged);
     }
 
     bIsBound = false;
 }
-
-//void UPlayerStatPanelWidget::OnPlayerStatHealthChanged(float InCurrentHealth, float InMaxHealth)
-//{
-//    UpdateHealthUI(InCurrentHealth, InMaxHealth);
-//}
-//
-//void UPlayerStatPanelWidget::OnPlayerStatEnergyChanged(float CurrentResource, float MaxResource)
-//{
-//    UpdateEnergyUI(CurrentResource, MaxResource);
-//}
 
 void UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged(FName FieldName)
 {
@@ -109,74 +100,94 @@ void UPlayerStatPanelWidget::HandlePlayerResourceFieldChanged(FName FieldName)
     }
 }
 
+void UPlayerStatPanelWidget::HandleWeaponFieldChanged(FName FieldName)
+{
+    if (FieldName == WeaponVMFields::MainWeaponData)
+    {
+        UpdateWeaponDataUI();
+    }
+}
+
 void UPlayerStatPanelWidget::UpdateHealthUI()
 {
-    if (!PlayerStatusViewModel) return;
+    if (!PlayerStatusViewModel)
+    {
+        return;
+    }
 
     const float CurrentHealth = PlayerStatusViewModel->GetCurrentHealth();
     const float MaxHealth = FMath::Max(PlayerStatusViewModel->GetMaxHealth(), 1.0f);
 
-    if(HealthProgressBar)
+    if (HealthProgressBar)
     {
-        float HealthPercent = FMath::Clamp(CurrentHealth / MaxHealth, 0.0f, 1.0f);
+        const float HealthPercent = FMath::Clamp(CurrentHealth / MaxHealth, 0.0f, 1.0f);
         HealthProgressBar->SetPercent(HealthPercent);
     }
-    if(CurrentHealthText)
+
+    if (CurrentHealthText)
     {
-        FText HealthText = FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), CurrentHealth, MaxHealth));
+        const FText HealthText = FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), CurrentHealth, MaxHealth));
         CurrentHealthText->SetText(HealthText);
     }
-    if(HealthStatText)
+
+    if (HealthStatText)
     {
-        FText HealthStat = FText::FromString(FString::Printf(TEXT("%.0f"), MaxHealth));
+        const FText HealthStat = FText::FromString(FString::Printf(TEXT("%.0f"), MaxHealth));
         HealthStatText->SetText(HealthStat);
     }
 }
 
 void UPlayerStatPanelWidget::UpdateEnergyUI()
 {
-    if (!PlayerStatusViewModel) return;
+    if (!PlayerStatusViewModel)
+    {
+        return;
+    }
 
     const float CurrentResource = PlayerStatusViewModel->GetCurrentEnergy();
     const float MaxResource = FMath::Max(PlayerStatusViewModel->GetMaxEnergy(), 1.0f);
 
-    if(EnergyProgressBar)
+    if (EnergyProgressBar)
     {
-        float EnergyPercent = FMath::Clamp(CurrentResource / MaxResource, 0.0f, 1.0f);
+        const float EnergyPercent = FMath::Clamp(CurrentResource / MaxResource, 0.0f, 1.0f);
         EnergyProgressBar->SetPercent(EnergyPercent);
     }
-    if(CurrentEnergyText)
+
+    if (CurrentEnergyText)
     {
-        FText EnergyText = FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), CurrentResource, MaxResource));
+        const FText EnergyText = FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), CurrentResource, MaxResource));
         CurrentEnergyText->SetText(EnergyText);
     }
-    if(EnergyStatText)
+
+    if (EnergyStatText)
     {
-        FText EnergyStat = FText::FromString(FString::Printf(TEXT("%.0f"), MaxResource));
+        const FText EnergyStat = FText::FromString(FString::Printf(TEXT("%.0f"), MaxResource));
         EnergyStatText->SetText(EnergyStat);
     }
 }
 
-void UPlayerStatPanelWidget::UpdateWeaponDataUI(UWeaponDataAsset* InWeaponData)
+void UPlayerStatPanelWidget::UpdateWeaponDataUI()
 {
-    if (AttackDamageText)
+    if (!PlayerWeaponViewModel || !AttackDamageText)
     {
-        if(InWeaponData)
-        {
-            FText AttackDamageStat = FText::FromString(FString::Printf(TEXT("%.0f"), InWeaponData->AttackDamage));
-            AttackDamageText->SetText(AttackDamageStat);
-        }
+        return;
+    }
+
+    if (UWeaponDataAsset* InWeaponData = PlayerWeaponViewModel->GetMainWeaponData())
+    {
+        const FText AttackDamageStat = FText::FromString(FString::Printf(TEXT("%.0f"), InWeaponData->AttackDamage));
+        AttackDamageText->SetText(AttackDamageStat);
     }
 }
 
 void UPlayerStatPanelWidget::UpdateWalkSpeedUI()
 {
-    if (!PlayerStatusViewModel) return;
-
-    if (WalkSpeedText)
+    if (!PlayerStatusViewModel || !WalkSpeedText)
     {
-        const float NewWalkSpeed = PlayerStatusViewModel->GetWalkSpeed();
-        FText WalkSpeedStat = FText::FromString(FString::Printf(TEXT("%.0f"), NewWalkSpeed));
-        WalkSpeedText->SetText(WalkSpeedStat);
+        return;
     }
+
+    const float NewWalkSpeed = PlayerStatusViewModel->GetWalkSpeed();
+    const FText WalkSpeedStat = FText::FromString(FString::Printf(TEXT("%.0f"), NewWalkSpeed));
+    WalkSpeedText->SetText(WalkSpeedStat);
 }

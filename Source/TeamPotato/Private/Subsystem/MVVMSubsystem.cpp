@@ -10,10 +10,7 @@
 #include "Subsystem/ViewModel/WeaponViewModel.h"
 #include "Subsystem/ViewModel/MinimapViewModel.h"
 #include "Subsystem/ViewModel/EnemyViewModel.h"
-#include "Data/WeaponDataAsset.h"
-#include "TeamPotato/Logic/DungeonGanarator.h"
 #include "Enemy/BossBase.h"
-#include "Player/TestPlayerController.h"
 
 void UMVVMSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -27,7 +24,30 @@ void UMVVMSubsystem::Deinitialize()
         PlayerStatusViewModel->Deinitialize();
     }
 
+    if (PerkViewModel)
+    {
+        PerkViewModel->Deinitialize();
+    }
+
+    if (WeaponViewModel)
+    {
+        WeaponViewModel->Deinitialize();
+    }
+
+    if (MinimapViewModel)
+    {
+        MinimapViewModel->Deinitialize();
+    }
+
+    if (EnemyViewModel)
+    {
+        EnemyViewModel->Deinitialize();
+    }
+
     RegisteredPlayerResourceComp = nullptr;
+    RegisteredPerkComp = nullptr;
+    RegisteredWeaponComp = nullptr;
+    RegisteredBossActor = nullptr;
 
     Super::Deinitialize();
 }
@@ -35,20 +55,20 @@ void UMVVMSubsystem::Deinitialize()
 
 UPlayerResourceViewModel* UMVVMSubsystem::GetPlayerStatusViewModel()
 {
-	if (!PlayerStatusViewModel)
-	{
-		PlayerStatusViewModel = NewObject<UPlayerResourceViewModel>(this);
-	}	
-	return PlayerStatusViewModel;
+    if (!PlayerStatusViewModel)
+    {
+        PlayerStatusViewModel = NewObject<UPlayerResourceViewModel>(this);
+    }
+    return PlayerStatusViewModel;
 }
 
 UPerkViewModel* UMVVMSubsystem::GetPerkViewModel()
 {
-	if (!PerkViewModel)
-	{
+    if (!PerkViewModel)
+    {
         PerkViewModel = NewObject<UPerkViewModel>(this);
-	}
-	return PerkViewModel;
+    }
+    return PerkViewModel;
 }
 
 UWeaponViewModel* UMVVMSubsystem::GetWeaponViewModel()
@@ -79,13 +99,12 @@ UEnemyViewModel* UMVVMSubsystem::GetEnemyViewModel()
 }
 
 
-// ==============================================================================
-// 컴포넌트 등록 및 해제 함수들
-// ==============================================================================
-
 void UMVVMSubsystem::RegisterPlayerResourceComp(UPlayerResource* NewComp)
 {
-	if (!NewComp) return;
+    if (!NewComp)
+    {
+        return;
+    }
 
     if (RegisteredPlayerResourceComp && RegisteredPlayerResourceComp != NewComp)
     {
@@ -93,131 +112,113 @@ void UMVVMSubsystem::RegisterPlayerResourceComp(UPlayerResource* NewComp)
     }
 
     RegisteredPlayerResourceComp = NewComp;
-
-	// 뷰모델 가져오기
-	UPlayerResourceViewModel* VM = GetPlayerStatusViewModel();
-    VM->Initialize(NewComp);
+    GetPlayerStatusViewModel()->Initialize(NewComp);
 }
 
 void UMVVMSubsystem::UnregisterPlayerResourceComp(UPlayerResource* ExitingComp)
 {
+    if (RegisteredPlayerResourceComp != ExitingComp)
+    {
+        return;
+    }
+
     if (PlayerStatusViewModel)
     {
         PlayerStatusViewModel->Deinitialize();
     }
 
-    if (RegisteredPlayerResourceComp == ExitingComp)
-    {
-        RegisteredPlayerResourceComp = nullptr;
-	}
+    RegisteredPlayerResourceComp = nullptr;
 }
-
 
 void UMVVMSubsystem::RegisterPerkComp(UPerkComponent* NewComp)
 {
-	if (!NewComp) return;
+    if (!NewComp)
+    {
+        return;
+    }
 
-	UnregisterPerkComp(NewComp);
+    if (RegisteredPerkComp && RegisteredPerkComp != NewComp)
+    {
+        UnregisterPerkComp(RegisteredPerkComp);
+    }
 
-	// 뷰모델 가져오기
-    UPerkViewModel* VM = GetPerkViewModel();
-
-	// Model->ViewModel (장착된 퍽이 바뀌면 뷰모델에 반영)
-	NewComp->OnEquipmentUpdated.AddDynamic(VM, &UPerkViewModel::SetPerkDataAsset);
-
-    NewComp->OnPerkEquipmentCleared.AddDynamic(VM, &UPerkViewModel::RequestClearAllPerks);
-
-    // ViewModel->Model (장착 요청시에 컴포넌트에서 장착)
-    VM->OnEquipPerkRequest.BindDynamic(NewComp, &UPerkComponent::EquipPerk);
+    RegisteredPerkComp = NewComp;
+    GetPerkViewModel()->Initialize(NewComp);
 }
 
 void UMVVMSubsystem::UnregisterPerkComp(UPerkComponent* ExitingComp)
 {
-	if (ExitingComp && PerkViewModel)
-	{
-		// 델리게이트 언바인딩
-		ExitingComp->OnEquipmentUpdated.RemoveDynamic(PerkViewModel, &UPerkViewModel::SetPerkDataAsset);
-        ExitingComp->OnPerkEquipmentCleared.RemoveDynamic(PerkViewModel, &UPerkViewModel::RequestClearAllPerks);
-        PerkViewModel->OnEquipPerkRequest.Unbind();
-	}
+    if (RegisteredPerkComp != ExitingComp)
+    {
+        return;
+    }
+
+    if (PerkViewModel)
+    {
+        PerkViewModel->Deinitialize();
+    }
+
+    RegisteredPerkComp = nullptr;
 }
 
 void UMVVMSubsystem::RegisterWeaponComp(UWeaponComponent* NewComp)
 {
-    if (!NewComp) return;
+    if (!NewComp)
+    {
+        return;
+    }
 
-    UnregisterWeaponComp(NewComp);
+    if (RegisteredWeaponComp && RegisteredWeaponComp != NewComp)
+    {
+        UnregisterWeaponComp(RegisteredWeaponComp);
+    }
 
-    // 뷰모델 가져오기
-    UWeaponViewModel* VM = GetWeaponViewModel();
-
-
-    // Model->ViewModel (무기가 바뀌면 뷰모델에 반영)
-    // 1. 메인 무기 변경
-    // 2. 서브 무기 변경
-    
-    // Model->ViewModel (장착된 무기가 바뀌면 뷰모델에 반영)
-    NewComp->OnMainWeaponChanged.AddDynamic(VM, &UWeaponViewModel::SetMainWeapon);
-    NewComp->OnSubWeaponChanged.AddDynamic(VM, &UWeaponViewModel::SetSubWeapon);
+    RegisteredWeaponComp = NewComp;
+    GetWeaponViewModel()->Initialize(NewComp);
 }
 
 void UMVVMSubsystem::UnregisterWeaponComp(UWeaponComponent* ExitingComp)
 {
-    if (ExitingComp && WeaponViewModel)
+    if (RegisteredWeaponComp != ExitingComp)
     {
-        // 델리게이트 언바인딩
-        ExitingComp->OnMainWeaponChanged.RemoveDynamic(WeaponViewModel, &UWeaponViewModel::SetMainWeapon);
-        ExitingComp->OnSubWeaponChanged.RemoveDynamic(WeaponViewModel, &UWeaponViewModel::SetSubWeapon);
+        return;
     }
-}
 
-void UMVVMSubsystem::RegisterDungeonGeneratorActor(ADungeonGanarator* NewActor)
-{
-    if (!NewActor) return;
-
-    UnregisterDungeonGeneratorActor(NewActor);
-
-    // 뷰모델 가져오기
-    UMinimapViewModel* VM = GetMinimapViewModel();
-
-    // DungeonGenerator -> ViewModel -> 던전 생성 완료 알림 뿌림
-    NewActor->OnDungeonGenerationCompleted.AddDynamic(VM, &UMinimapViewModel::RequestMinimapCapture);
-
-    // 플레이어 컨트롤러 가져오기 
-    //APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    ATestPlayerController* PC = Cast<ATestPlayerController>(GetWorld()->GetFirstPlayerController());
-
-    NewActor->OnStageAndChapterChanged.AddDynamic(PC, &ATestPlayerController::TryPerkSelectionScreen);
-}
-
-void UMVVMSubsystem::UnregisterDungeonGeneratorActor(ADungeonGanarator* ExitingActor)
-{
-    if (ExitingActor && MinimapViewModel)
+    if (WeaponViewModel)
     {
-        // 델리게이트 언바인딩
-        ExitingActor->OnDungeonGenerationCompleted.RemoveDynamic(MinimapViewModel, &UMinimapViewModel::RequestMinimapCapture);
+        WeaponViewModel->Deinitialize();
     }
+
+    RegisteredWeaponComp = nullptr;
 }
 
 void UMVVMSubsystem::RegisterBossActor(ABossBase* NewActor)
 {
-    if (!NewActor) return;
+    if (!NewActor)
+    {
+        return;
+    }
 
-    UnregisterBossActor(NewActor);
+    if (RegisteredBossActor && RegisteredBossActor != NewActor)
+    {
+        UnregisterBossActor(RegisteredBossActor);
+    }
 
-    // 뷰모델 가져오기
-    UEnemyViewModel* VM = GetEnemyViewModel();
-
-    // BossActor -> ViewModel -> 보스 스폰 알림 뿌림
-    NewActor->OnBossHealthChanged.AddDynamic(VM, &UEnemyViewModel::SetBossHealth);
+    RegisteredBossActor = NewActor;
+    GetEnemyViewModel()->Initialize(NewActor);
 }
 
 void UMVVMSubsystem::UnregisterBossActor(ABossBase* ExitingActor)
 {
-    if (ExitingActor && EnemyViewModel)
+    if (RegisteredBossActor != ExitingActor)
     {
-        // 델리게이트 언바인딩
-        ExitingActor->OnBossHealthChanged.RemoveDynamic(EnemyViewModel, &UEnemyViewModel::SetBossHealth);
+        return;
     }
-}
 
+    if (EnemyViewModel)
+    {
+        EnemyViewModel->Deinitialize();
+    }
+
+    RegisteredBossActor = nullptr;
+}

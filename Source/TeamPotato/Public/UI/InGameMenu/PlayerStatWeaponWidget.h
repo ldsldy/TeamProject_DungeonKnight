@@ -6,31 +6,30 @@
 #include "Blueprint/UserWidget.h"
 #include "PlayerStatWeaponWidget.generated.h"
 
-class UWeaponViewModel;
 class UImage;
 class UTextBlock;
-class UWeaponDataAsset;
+class UWeaponViewModel;
+
 /**
  * 
  */
 UCLASS()
 class TEAMPOTATO_API UPlayerStatWeaponWidget : public UUserWidget
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
 
 private:
-    UFUNCTION()
-    void UpdateMainWeaponIcon(UWeaponDataAsset* InDataAsset);
-    
-    UFUNCTION()
-    void UpdateSubWeaponIcon(UWeaponDataAsset* InDataAsset);
-
     void BindViewModel();
     void UnbindViewModel();
+    void UpdateMainWeaponIcon();
+    void UpdateSubWeaponIcon();
+
+    UFUNCTION()
+    void HandleWeaponFieldChanged(FName FieldName);
 
 private:
     UPROPERTY(meta = (BindWidget))
@@ -44,6 +43,7 @@ private:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> SubWeaponName;
+
     UPROPERTY()
     TObjectPtr<UWeaponViewModel> WeaponViewModel;
 

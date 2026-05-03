@@ -3,9 +3,10 @@
 
 #include "UI/Minimap/MinimapWidget.h"
 #include "Components/Image.h"
-#include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/MinimapViewModel.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Subsystem/MVVMSubsystem.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
+#include "Subsystem/ViewModel/MinimapViewModel.h"
 
 void UMinimapWidget::NativeConstruct()
 {
@@ -36,12 +37,10 @@ void UMinimapWidget::BindViewModel()
 {
     if (MinimapViewModel && !bIsViewModelBound)
     {
-        MinimapViewModel->OnMinimapInitialized.AddDynamic(
-            this, &UMinimapWidget::HandleMinimapInitialized);
-
+        MinimapViewModel->OnFieldChanged.AddDynamic(this, &UMinimapWidget::HandleViewModelFieldChanged);
         bIsViewModelBound = true;
 
-        HandleMinimapInitialized();
+        UpdateMinimapMaterial();
     }
 }
 
@@ -49,22 +48,29 @@ void UMinimapWidget::UnbindViewModel()
 {
     if (MinimapViewModel && bIsViewModelBound)
     {
-        MinimapViewModel->OnMinimapInitialized.RemoveDynamic(
-            this, &UMinimapWidget::HandleMinimapInitialized);
-
+        MinimapViewModel->OnFieldChanged.RemoveDynamic(this, &UMinimapWidget::HandleViewModelFieldChanged);
         bIsViewModelBound = false;
     }
 }
 
-void UMinimapWidget::HandleMinimapInitialized()
+void UMinimapWidget::HandleViewModelFieldChanged(FName FieldName)
 {
-    if (MinimapViewModel)
+    if (FieldName == MinimapVMFields::IsInitialized)
     {
-        UMaterialInstanceDynamic* MinimapMaterial = MinimapViewModel->GetMinimapMaterial();
-        if (MinimapMaterial && MinimapImage)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("MinimapWidget::HandleMinimapInitialized - Setting Minimap Material"));
-            MinimapImage->SetBrushFromMaterial(MinimapMaterial);
-        }
+        UpdateMinimapMaterial();
+    }
+}
+
+void UMinimapWidget::UpdateMinimapMaterial()
+{
+    if (!MinimapViewModel || !MinimapImage || !MinimapViewModel->IsInitialized())
+    {
+        return;
+    }
+
+    UMaterialInstanceDynamic* MinimapMaterial = MinimapViewModel->GetMinimapMaterial();
+    if (MinimapMaterial)
+    {
+        MinimapImage->SetBrushFromMaterial(MinimapMaterial);
     }
 }

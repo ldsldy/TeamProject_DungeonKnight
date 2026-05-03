@@ -2,38 +2,46 @@
 
 
 #include "Subsystem/ViewModel/WeaponViewModel.h"
-#include "Data/WeaponDataAsset.h"
+#include "Component/WeaponComponent.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 
-void UWeaponViewModel::SetResource(float CurrentResource, float MaxResource)
+void UWeaponViewModel::Initialize(UObject* InModel)
 {
-    if (OnPlayerResourceUpdate.IsBound())
+    Deinitialize();
+
+    Super::Initialize(InModel);
+
+    Model = Cast<UWeaponComponent>(InModel);
+    if (!Model)
     {
-        OnPlayerResourceUpdate.Broadcast(CurrentResource, MaxResource);
+        return;
     }
+
+    Model->OnMainWeaponChanged.AddDynamic(this, &UWeaponViewModel::HandleMainWeaponChanged);
+    Model->OnSubWeaponChanged.AddDynamic(this, &UWeaponViewModel::HandleSubWeaponChanged);
+
+    HandleMainWeaponChanged(Model->GetMainWeaponData());
+    HandleSubWeaponChanged(Model->GetSubWeaponData());
 }
 
-void UWeaponViewModel::SetMainWeapon(UWeaponDataAsset* InWeaponData)
+void UWeaponViewModel::Deinitialize()
 {
-    if (!InWeaponData) return;
-
-    if (OnMainWeaponUpdate.IsBound())
+    if (Model)
     {
-        OnMainWeaponUpdate.Broadcast(InWeaponData);
-    
+        Model->OnMainWeaponChanged.RemoveDynamic(this, &UWeaponViewModel::HandleMainWeaponChanged);
+        Model->OnSubWeaponChanged.RemoveDynamic(this, &UWeaponViewModel::HandleSubWeaponChanged);
+        Model = nullptr;
     }
+
+    Super::Deinitialize();
 }
 
-void UWeaponViewModel::SetSubWeapon(UWeaponDataAsset* InWeaponData)
+void UWeaponViewModel::HandleMainWeaponChanged(UWeaponDataAsset* InWeaponData)
 {
-    if (!InWeaponData) return;
-
-    if (OnSubWeaponUpdate.IsBound())
-    {
-        OnSubWeaponUpdate.Broadcast(InWeaponData);
-    }
+    SetAndNotify(MainWeaponData, InWeaponData, WeaponVMFields::MainWeaponData);
 }
 
-void UWeaponViewModel::SwapMainAndSubWeapon()
+void UWeaponViewModel::HandleSubWeaponChanged(UWeaponDataAsset* InWeaponData)
 {
-
+    SetAndNotify(SubWeaponData, InWeaponData, WeaponVMFields::SubWeaponData);
 }

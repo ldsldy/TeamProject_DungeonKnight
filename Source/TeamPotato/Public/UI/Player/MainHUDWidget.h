@@ -6,7 +6,6 @@
 #include "Blueprint/UserWidget.h"
 #include "MainHUDWidget.generated.h"
 
-class UMVVMSubsystem;
 class UPlayerStatWidget;
 class UInventoryPerkTileWidget;
 class UPlayerWeaponWidget;
@@ -21,16 +20,6 @@ class TEAMPOTATO_API UMainHUDWidget : public UUserWidget
 {
 	GENERATED_BODY()
 	
-public:
-    UFUNCTION(BlueprintCallable, Category = "UI|MainHud")
-    void InitializeViewModels(UMVVMSubsystem* Subsystem);
-
-    UFUNCTION(BlueprintCallable, Category = "UI|MainHud")
-    void ShowBossWidget(UMVVMSubsystem* Subsystem);
-
-    UFUNCTION(BlueprintCallable, Category = "UI|MainHud")
-    void HideBossWidget(UMVVMSubsystem* Subsystem);
-
 protected:
 	// --- 플레이어 스탯 위젯 ---
 	UPROPERTY(meta = (BindWidget))

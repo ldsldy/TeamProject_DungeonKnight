@@ -3,24 +3,60 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
+#include "Subsystem/ViewModel/PGViewModelBase.h"
 #include "EnemyViewModel.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FUpdateBossHealth, float, InCurrentHealth, float, InMaxHealth);
+class ABossBase;
 
 /**
  * 
  */
-UCLASS()
-class TEAMPOTATO_API UEnemyViewModel : public UObject
+UCLASS(Blueprintable)
+class TEAMPOTATO_API UEnemyViewModel : public UPGViewModelBase
 {
 	GENERATED_BODY()
 	
 public:
-    UFUNCTION(BlueprintCallable)
-    void SetBossHealth(float CurrentHealth, float MaxHealth);
+    virtual void Initialize(UObject* InModel) override;
+    virtual void Deinitialize() override;
 
-public:
-    UPROPERTY(BlueprintAssignable)
-    FUpdateBossHealth UpdateBossHealth;
+    UFUNCTION(BlueprintPure)
+    float GetCurrentHealth() const { return CurrentHealth; }
+
+    UFUNCTION(BlueprintPure)
+    float GetMaxHealth() const { return MaxHealth; }
+
+    UFUNCTION(BlueprintPure)
+    float GetHealthPercent() const { return HealthPercent; }
+
+    UFUNCTION(BlueprintPure)
+    bool IsBossVisible() const { return bIsVisible; }
+
+private:
+    UFUNCTION()
+    void HandleBossHealthChanged(float InCurrentHealth, float InMaxHealth);
+
+    UFUNCTION()
+    void HandleBossSpawned();
+
+    UFUNCTION()
+    void HandleBossDied();
+
+    void UpdateHealthPercent();
+
+private:
+    UPROPERTY()
+    TObjectPtr<ABossBase> Model = nullptr;
+
+    UPROPERTY()
+    float CurrentHealth = 0.0f;
+
+    UPROPERTY()
+    float MaxHealth = 1.0f;
+
+    UPROPERTY()
+    float HealthPercent = 0.0f;
+
+    UPROPERTY()
+    bool bIsVisible = false;
 };

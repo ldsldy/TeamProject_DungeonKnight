@@ -6,9 +6,9 @@
 #include "Blueprint/UserWidget.h"
 #include "InventoryPerkTileWidget.generated.h"
 
-class UTileView;
 class UPerkDataAsset;
 class UPerkViewModel;
+class UTileView;
 
 /**
  * 
@@ -16,26 +16,27 @@ class UPerkViewModel;
 UCLASS()
 class TEAMPOTATO_API UInventoryPerkTileWidget : public UUserWidget
 {
-	GENERATED_BODY()
-
-public:
-	UFUNCTION()
-	void LoadPerkDataFromDataAsset(UPerkDataAsset* InData);
+    GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+    virtual void NativeConstruct() override;
+    virtual void NativeDestruct() override;
 
-	UFUNCTION()
-	void OnPerkitemHoveredChanged(UObject* Item, bool bIsHovered);
+    UFUNCTION()
+    void OnPerkitemHoveredChanged(UObject* Item, bool bIsHovered);
 
 private:
     void BindViewModel();
     void UnbindViewModel();
+    void RefreshPerkTileList();
+    void LoadPerkDataFromDataAsset(UPerkDataAsset* InData);
+
+    UFUNCTION()
+    void HandlePerkFieldChanged(FName FieldName);
 
 protected:
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTileView> PerkTileView = nullptr;
+    UPROPERTY(meta = (BindWidget))
+    TObjectPtr<UTileView> PerkTileView = nullptr;
 
 private:
     UPROPERTY()

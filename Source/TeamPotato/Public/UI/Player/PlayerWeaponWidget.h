@@ -6,19 +6,19 @@
 #include "Blueprint/UserWidget.h"
 #include "PlayerWeaponWidget.generated.h"
 
-class UTextBlock;
 class UImage;
-class UProgressBar;
-class UWeaponViewModel;
 class UPlayerResourceViewModel;
-class UWeaponDataAsset;
+class UProgressBar;
+class UTextBlock;
+class UWeaponViewModel;
+
 /**
  * 
  */
 UCLASS()
 class TEAMPOTATO_API UPlayerWeaponWidget : public UUserWidget
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 protected:
     virtual void NativeConstruct() override;
@@ -28,20 +28,15 @@ private:
     void BindViewModel();
     void UnbindViewModel();
 
-    // --- 뷰모델 바인딩 함수 ---
-    // 플레이어에게 있는 무기 공격 가능 자원 변경 함수
-    UFUNCTION()
-    void UpdatePlayerResourceBar(float CurrentResource, float MaxResource);
+    void UpdatePlayerResourceBar();
+    void UpdateMainWeaponInfo();
+    void UpdateSubWeaponInfo();
 
     UFUNCTION()
     void HandleResourceFieldChanged(FName FieldName);
 
-    // 플레이어의 메인 무기 정보 변경 함수 (데이터 에셋 혹은 테이블도 생각)
-     UFUNCTION()
-    void UpdateMainWeaponInfo(UWeaponDataAsset* InDataAsset);
-
     UFUNCTION()
-    void UpdateSubWeaponInfo(UWeaponDataAsset* InDataAsset);
+    void HandleWeaponFieldChanged(FName FieldName);
 
 protected:
     UPROPERTY(meta = (BindWidget))

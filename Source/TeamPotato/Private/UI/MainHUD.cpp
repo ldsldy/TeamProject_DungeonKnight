@@ -2,36 +2,104 @@
 
 
 #include "UI/MainHUD.h"
+#include "Player/TestPlayerController.h"
+#include "UI/BaseLayerWidget.h"
+#include "UI/Perk/PerkSelectionScreenWidget.h"
 #include "UI/Player/MainHUDWidget.h"
+#include "UI/UIWidgetLayerTags.h"
+
+AMainHUD::AMainHUD()
+{
+    OpenPerkSelectionLayerTags.ActivateTags.AddTag(TeamPotatoGameplayTags::UI_Layer_PerkSelection);
+    ClosePerkSelectionLayerTags.DeactivateTags.AddTag(TeamPotatoGameplayTags::UI_Layer_PerkSelection);
+}
 
 void AMainHUD::BeginPlay()
 {
     Super::BeginPlay();
 
-    // 메인 HUD 위젯 생성
     MainHUDWidget = CreateWidget<UMainHUDWidget>(GetOwningPlayerController(), MainHUDWidgetClass);
-
-    // 메인 HUD 위젯 초기화 및 뷰포트에 추가
     if (MainHUDWidget)
     {
-        MainHUDWidget->InitializeViewModels(nullptr);
-
         MainHUDWidget->AddToViewport();
     }
-}
 
-void AMainHUD::TryShowBossWidget()
-{
-    if (MainHUDWidget)
+    TSubclassOf<UBaseLayerWidget> ResolvedBaseLayerClass = BaseLayerWidgetClass;
+    if (!ResolvedBaseLayerClass)
     {
-        MainHUDWidget->ShowBossWidget(nullptr);
+        ResolvedBaseLayerClass = UBaseLayerWidget::StaticClass();
+    }
+
+    BaseLayerWidget = CreateWidget<UBaseLayerWidget>(GetOwningPlayerController(), ResolvedBaseLayerClass);
+    if (BaseLayerWidget)
+    {
+        BaseLayerWidget->AddToViewport(0);
+        BaseLayerWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+    }
+
+    if (BaseLayerWidget && PerkSelectionScreenClass)
+    {
+        UPerkSelectionScreenWidget* PerkSelectionScreen = Cast<UPerkSelectionScreenWidget>(
+            BaseLayerWidget->RegisterLayerWidgetClass(
+                TeamPotatoGameplayTags::UI_Layer_PerkSelection,
+                PerkSelectionScreenClass,
+                5));
+
+        if (PerkSelectionScreen)
+        {
+            PerkSelectionScreen->OnPerkSelected.AddDynamic(this, &AMainHUD::RemovePerkSelectionScreenFromViewport);
+        }
     }
 }
 
-void AMainHUD::TryHideBossWidget()
+void AMainHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    if (MainHUDWidget)
+    if (BaseLayerWidget)
     {
-        MainHUDWidget->HideBossWidget(nullptr);
+        UPerkSelectionScreenWidget* PerkSelectionScreen = Cast<UPerkSelectionScreenWidget>(
+            BaseLayerWidget->FindLayerWidget(TeamPotatoGameplayTags::UI_Layer_PerkSelection));
+
+        if (PerkSelectionScreen)
+        {
+            PerkSelectionScreen->OnPerkSelected.RemoveDynamic(this, &AMainHUD::RemovePerkSelectionScreenFromViewport);
+        }
+    }
+
+    Super::EndPlay(EndPlayReason);
+}
+
+void AMainHUD::TryPerkSelectionScreen(int32 InStage, int32 InChapter)
+{
+    if (InChapter == 2 || InChapter == 4)
+    {
+        AddPerkSelectionScreenToViewport();
+    }
+}
+
+void AMainHUD::AddPerkSelectionScreenToViewport()
+{
+    if (!BaseLayerWidget)
+    {
+        return;
+    }
+
+    BaseLayerWidget->ApplyLayerActivation(OpenPerkSelectionLayerTags);
+
+    if (ATestPlayerController* PC = Cast<ATestPlayerController>(GetOwningPlayerController()))
+    {
+        PC->SetGameAndUIInputMode(BaseLayerWidget->FindLayerWidget(TeamPotatoGameplayTags::UI_Layer_PerkSelection));
+    }
+}
+
+void AMainHUD::RemovePerkSelectionScreenFromViewport()
+{
+    if (BaseLayerWidget)
+    {
+        BaseLayerWidget->ApplyLayerActivation(ClosePerkSelectionLayerTags);
+    }
+
+    if (ATestPlayerController* PC = Cast<ATestPlayerController>(GetOwningPlayerController()))
+    {
+        PC->SetGameOnlyInputMode();
     }
 }

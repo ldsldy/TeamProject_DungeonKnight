@@ -17,3 +17,27 @@ namespace PlayerResourceVMFields
     const FName WalkSpeed(TEXT("WalkSpeed"));
     const FName AttackPower(TEXT("AttackPower"));
 }
+
+namespace WeaponVMFields
+{
+    const FName MainWeaponData(TEXT("MainWeaponData"));
+    const FName SubWeaponData(TEXT("SubWeaponData"));
+}
+
+namespace PerkVMFields
+{
+    const FName EquippedPerks(TEXT("EquippedPerks"));
+}
+
+namespace EnemyVMFields
+{
+    const FName CurrentHealth(TEXT("CurrentHealth"));
+    const FName MaxHealth(TEXT("MaxHealth"));
+    const FName HealthPercent(TEXT("HealthPercent"));
+    const FName IsVisible(TEXT("IsVisible"));
+}
+
+namespace MinimapVMFields
+{
+    const FName IsInitialized(TEXT("IsInitialized"));
+}

@@ -23,6 +23,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     //데미지와 사망 처리
     virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -40,6 +41,12 @@ public:
     //패턴 실행하는 함수
     UFUNCTION(BlueprintCallable, Category = "Boss|Combat")
     virtual void ExecutePattern(int32 PatternIndex);
+
+    UFUNCTION(BlueprintPure, Category = "Boss|Status")
+    float GetCurrentHealthValue() const { return CurrentHealth; }
+
+    UFUNCTION(BlueprintPure, Category = "Boss|Status")
+    float GetMaxHealthValue() const { return MaxHealth; }
 
     //탄막(Bullet Hell) 컴포넌트
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Components")

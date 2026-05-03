@@ -3,44 +3,58 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "Data/PerkDataAsset.h"
+#include "Subsystem/ViewModel/PGViewModelBase.h"
 #include "PerkViewModel.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPerkEquipped, UPerkDataAsset*, NewPerkDataAsset);
-DECLARE_DYNAMIC_DELEGATE_RetVal_TwoParams(bool, FOnEquipPerkRequest, UPerkDataAsset*, PerkToEquip, int32, InIndex);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTryAllPerkClear);
+
+class UPerkDataAsset;
+class UPerkComponent;
+
 /**
  * 
  */
 UCLASS(Blueprintable)
-class TEAMPOTATO_API UPerkViewModel : public UObject
+class TEAMPOTATO_API UPerkViewModel : public UPGViewModelBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintCallable)
-	void SetPerkDataAsset(UPerkDataAsset* NewData);
+    virtual void Initialize(UObject* InModel) override;
+    virtual void Deinitialize() override;
 
-    // 퍽 장착 요청(View to Model)
-	UFUNCTION(BlueprintCallable)
+    UFUNCTION(BlueprintCallable)
+    void SetPerkDataAsset(UPerkDataAsset* NewData);
+
+    UFUNCTION(BlueprintCallable)
     bool RequestEquipPerk(UPerkDataAsset* NewData, int32 SlotIndex = -1);
 
-    // 모든 퍽 해제 요청(View to Model)
     UFUNCTION(BlueprintCallable)
     void RequestClearAllPerks();
 
-	// --- 컴포넌트 -> PerPanelWidget ---
-	UPROPERTY(BlueprintAssignable)
-	FOnPerkEquipped OnPerkEquipped;
-	
-    UPROPERTY()
-    FOnEquipPerkRequest OnEquipPerkRequest;
-    
+    UFUNCTION(BlueprintPure)
+    UPerkDataAsset* GetEquippedPerkAt(int32 Index) const;
+
+    const TArray<TObjectPtr<UPerkDataAsset>>& GetEquippedPerks() const { return CachedEquippedPerks; }
+
+public:
+    UPROPERTY(BlueprintAssignable)
+    FOnPerkEquipped OnPerkEquipped;
+
     UPROPERTY(BlueprintAssignable)
     FTryAllPerkClear OnTryAllPerkClear;
 
 private:
+    UFUNCTION()
+    void HandleModelPerkCleared();
+
+    void RefreshCachedPerksFromModel();
+
+private:
+    UPROPERTY()
+    TObjectPtr<UPerkComponent> Model = nullptr;
+
     UPROPERTY()
     TArray<TObjectPtr<UPerkDataAsset>> CachedEquippedPerks;
 };

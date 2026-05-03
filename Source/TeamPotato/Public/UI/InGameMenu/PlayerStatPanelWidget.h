@@ -4,20 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Data/WeaponDataAsset.h"
 #include "PlayerStatPanelWidget.generated.h"
 
-class UTextBlock;
-class UProgressBar;
 class UPlayerResourceViewModel;
+class UProgressBar;
+class UTextBlock;
 class UWeaponViewModel;
+
 /**
  * 
  */
 UCLASS()
 class TEAMPOTATO_API UPlayerStatPanelWidget : public UUserWidget
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 protected:
     virtual void NativeConstruct() override;
@@ -27,23 +27,16 @@ private:
     void BindViewModel();
     void UnbindViewModel();
 
-    //UFUNCTION()
-    //void OnPlayerStatHealthChanged(float InCurrentHealth, float InMaxHealth);
-
-    //UFUNCTION()
-    //void OnPlayerStatEnergyChanged(float CurrentResource, float MaxResource);
-
-    UFUNCTION()
-    void UpdateWeaponDataUI(UWeaponDataAsset* InWeaponData);
-
     UFUNCTION()
     void HandlePlayerResourceFieldChanged(FName FieldName);
-    
+
+    UFUNCTION()
+    void HandleWeaponFieldChanged(FName FieldName);
+
     void UpdateWalkSpeedUI();
-    
     void UpdateHealthUI();
-    
     void UpdateEnergyUI();
+    void UpdateWeaponDataUI();
 
 protected:
     UPROPERTY(meta = (BindWidget))
@@ -66,7 +59,7 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> AttackDamageText;
-    
+
     UPROPERTY(meta = (BindWidget))
     TObjectPtr<UTextBlock> WalkSpeedText;
 

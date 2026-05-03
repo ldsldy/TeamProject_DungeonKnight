@@ -25,7 +25,10 @@ private:
     void UnbindViewModel();
 
     UFUNCTION()
-    void SetBossHealthUI(float CurrentHealth, float MaxHealth);
+    void HandleEnemyFieldChanged(FName FieldName);
+
+    void UpdateBossHealthUI();
+    void UpdateBossVisibility();
 
     UFUNCTION()
     void UpdateDelayBar();

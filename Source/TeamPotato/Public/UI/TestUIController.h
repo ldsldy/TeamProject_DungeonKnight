@@ -30,6 +30,9 @@ protected:
     UFUNCTION()
     void UpdateMinimapPlayerPosition();
 
+    UFUNCTION()
+    void HandleMinimapViewModelFieldChanged(FName FieldName);
+
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "UI")
     TSubclassOf<UMinimapWidget> MinimapWidgetClass;

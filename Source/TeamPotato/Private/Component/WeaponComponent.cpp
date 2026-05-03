@@ -247,6 +247,16 @@ EWeaponType UWeaponComponent::GetCurrentWeaponType() const
 	return ActivatedWeapon ? ActivatedWeapon->GetWeaponType() : EWeaponType::None;
 }
 
+UWeaponDataAsset* UWeaponComponent::GetMainWeaponData() const
+{
+    return ActivatedWeapon ? ActivatedWeapon->GetWeaponData() : nullptr;
+}
+
+UWeaponDataAsset* UWeaponComponent::GetSubWeaponData() const
+{
+    return SubWeapon ? SubWeapon->GetWeaponData() : nullptr;
+}
+
 
 void UWeaponComponent::BroadcastMainWeaponChanged()
 {

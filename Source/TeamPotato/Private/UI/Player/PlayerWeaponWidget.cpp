@@ -2,13 +2,14 @@
 
 
 #include "UI/Player/PlayerWeaponWidget.h"
-#include "Components/ProgressBar.h"
 #include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
+#include "Data/WeaponDataAsset.h"
 #include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/WeaponViewModel.h"
-#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
 #include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
+#include "Subsystem/ViewModel/PlayerResourceViewModel.h"
+#include "Subsystem/ViewModel/WeaponViewModel.h"
 
 void UPlayerWeaponWidget::NativeConstruct()
 {
@@ -40,9 +41,16 @@ void UPlayerWeaponWidget::NativeDestruct()
     Super::NativeDestruct();
 }
 
-void UPlayerWeaponWidget::UpdatePlayerResourceBar(float CurrentResource, float MaxResource)
+void UPlayerWeaponWidget::UpdatePlayerResourceBar()
 {
-    float ResourcePercent = FMath::Clamp(CurrentResource / MaxResource, 0.0f, 1.0f);
+    if (!PlayerResourceViewModel)
+    {
+        return;
+    }
+
+    const float CurrentResource = PlayerResourceViewModel->GetCurrentEnergy();
+    const float MaxResource = FMath::Max(1.0f, PlayerResourceViewModel->GetMaxEnergy());
+    const float ResourcePercent = FMath::Clamp(CurrentResource / MaxResource, 0.0f, 1.0f);
 
     if (PlayerResourceBar)
     {
@@ -56,25 +64,49 @@ void UPlayerWeaponWidget::UpdatePlayerResourceBar(float CurrentResource, float M
     }
 }
 
-void UPlayerWeaponWidget::UpdateMainWeaponInfo(UWeaponDataAsset* InDataAsset)
+void UPlayerWeaponWidget::UpdateMainWeaponInfo()
 {
-    if(WeaponIconImage)
+    if (!WeaponViewModel)
+    {
+        return;
+    }
+
+    UWeaponDataAsset* InDataAsset = WeaponViewModel->GetMainWeaponData();
+    if (!InDataAsset)
+    {
+        return;
+    }
+
+    if (WeaponIconImage)
     {
         WeaponIconImage->SetBrushFromTexture(InDataAsset->WeaponIcon);
     }
-    if(WeaponName)
+
+    if (WeaponName)
     {
         WeaponName->SetText(InDataAsset->WeaponName);
     }
+
     if (UsageResourceText)
     {
-        FText InWeaponCost = FText::AsNumber(FMath::FloorToInt(InDataAsset->AttackCost));
-        UsageResourceText->SetText(InWeaponCost);
+        const FText WeaponCost = FText::AsNumber(FMath::FloorToInt(InDataAsset->AttackCost));
+        UsageResourceText->SetText(WeaponCost);
     }
 }
 
-void UPlayerWeaponWidget::UpdateSubWeaponInfo(UWeaponDataAsset* InDataAsset)
+void UPlayerWeaponWidget::UpdateSubWeaponInfo()
 {
+    if (!WeaponViewModel)
+    {
+        return;
+    }
+
+    UWeaponDataAsset* InDataAsset = WeaponViewModel->GetSubWeaponData();
+    if (!InDataAsset)
+    {
+        return;
+    }
+
     if (SubWeaponIconImage)
     {
         SubWeaponIconImage->SetBrushFromTexture(InDataAsset->WeaponIcon);
@@ -83,50 +115,59 @@ void UPlayerWeaponWidget::UpdateSubWeaponInfo(UWeaponDataAsset* InDataAsset)
 
 void UPlayerWeaponWidget::BindViewModel()
 {
-    // 이미 바인딩된 경우 무시
     if (WeaponViewModel && PlayerResourceViewModel && !bIsViewModelBound)
     {
-        // Model -> ViewModel 바인딩
-        WeaponViewModel->OnMainWeaponUpdate.AddDynamic(this, &UPlayerWeaponWidget::UpdateMainWeaponInfo);
-        WeaponViewModel->OnSubWeaponUpdate.AddDynamic(this, &UPlayerWeaponWidget::UpdateSubWeaponInfo);
+        WeaponViewModel->OnFieldChanged.AddDynamic(this, &UPlayerWeaponWidget::HandleWeaponFieldChanged);
         PlayerResourceViewModel->OnFieldChanged.AddDynamic(this, &UPlayerWeaponWidget::HandleResourceFieldChanged);
 
         bIsViewModelBound = true;
 
-        UpdatePlayerResourceBar(PlayerResourceViewModel->GetCurrentEnergy(), PlayerResourceViewModel->GetMaxEnergy());
+        UpdateMainWeaponInfo();
+        UpdateSubWeaponInfo();
+        UpdatePlayerResourceBar();
     }
 }
 
 void UPlayerWeaponWidget::UnbindViewModel()
 {
-    if (bIsViewModelBound)
-    {
-        if (WeaponViewModel)
-        {
-            WeaponViewModel->OnMainWeaponUpdate.RemoveDynamic(this, &UPlayerWeaponWidget::UpdateMainWeaponInfo);
-            WeaponViewModel->OnSubWeaponUpdate.RemoveDynamic(this, &UPlayerWeaponWidget::UpdateSubWeaponInfo);
-        }
-
-        if (PlayerResourceViewModel)
-        {
-            PlayerResourceViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerWeaponWidget::HandleResourceFieldChanged);
-        }
-
-        bIsViewModelBound = false;
-    }
-}
-
-void UPlayerWeaponWidget::HandleResourceFieldChanged(FName FieldName)
-{
-    if (!PlayerResourceViewModel)
+    if (!bIsViewModelBound)
     {
         return;
     }
 
+    if (WeaponViewModel)
+    {
+        WeaponViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerWeaponWidget::HandleWeaponFieldChanged);
+    }
+
+    if (PlayerResourceViewModel)
+    {
+        PlayerResourceViewModel->OnFieldChanged.RemoveDynamic(this, &UPlayerWeaponWidget::HandleResourceFieldChanged);
+    }
+
+    bIsViewModelBound = false;
+}
+
+void UPlayerWeaponWidget::HandleResourceFieldChanged(FName FieldName)
+{
     if (FieldName == PlayerResourceVMFields::EnergyCurrent
         || FieldName == PlayerResourceVMFields::EnergyMax
         || FieldName == PlayerResourceVMFields::EnergyPercent)
     {
-        UpdatePlayerResourceBar(PlayerResourceViewModel->GetCurrentEnergy(), PlayerResourceViewModel->GetMaxEnergy());
+        UpdatePlayerResourceBar();
+    }
+}
+
+void UPlayerWeaponWidget::HandleWeaponFieldChanged(FName FieldName)
+{
+    if (FieldName == WeaponVMFields::MainWeaponData)
+    {
+        UpdateMainWeaponInfo();
+        return;
+    }
+
+    if (FieldName == WeaponVMFields::SubWeaponData)
+    {
+        UpdateSubWeaponInfo();
     }
 }

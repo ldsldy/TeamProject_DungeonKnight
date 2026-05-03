@@ -3,9 +3,8 @@
 
 #include "UI/TestUIController.h"
 #include "Subsystem/MVVMSubsystem.h"
-#include "Subsystem/ViewModel/PerkViewModel.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
 #include "Subsystem/ViewModel/MinimapViewModel.h"
-#include "UI/Perk/PerkSelectionScreenWidget.h"
 #include "UI/Minimap/MinimapWidget.h"
 
 void ATestUIController::BeginPlay()
@@ -27,7 +26,7 @@ void ATestUIController::BeginPlay()
                 if (!MinimapViewModel)
                 {
                     MinimapViewModel = Subsystem->GetMinimapViewModel();
-                    MinimapViewModel->OnMinimapInitialized.AddDynamic(this, &ATestUIController::UpdateMinimapPlayerPosition);
+                    MinimapViewModel->OnFieldChanged.AddDynamic(this, &ATestUIController::HandleMinimapViewModelFieldChanged);
                 }
             }
         }
@@ -46,6 +45,11 @@ void ATestUIController::BeginPlay()
 void ATestUIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     GetWorldTimerManager().ClearTimer(MinimapUpdateTimer);
+
+    if (MinimapViewModel)
+    {
+        MinimapViewModel->OnFieldChanged.RemoveDynamic(this, &ATestUIController::HandleMinimapViewModelFieldChanged);
+    }
 
     Super::EndPlay(EndPlayReason);
 }
@@ -100,5 +104,13 @@ void ATestUIController::UpdateMinimapPlayerPosition()
         MinimapViewModel->UpdatePlayerPosition(CurrentPawnLocation, CurrentPawnYaw);
         LastPawnLocation = CurrentPawnLocation;
         LastPawnYaw = CurrentPawnYaw;
+    }
+}
+
+void ATestUIController::HandleMinimapViewModelFieldChanged(FName FieldName)
+{
+    if (FieldName == MinimapVMFields::IsInitialized)
+    {
+        UpdateMinimapPlayerPosition();
     }
 }

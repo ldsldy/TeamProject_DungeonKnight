@@ -12,6 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSubWeaponChanged, UWeaponDataAsse
 
 class ATestCharacter;
 class AWeaponBase;
+class UWeaponDataAsset;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TEAMPOTATO_API UWeaponComponent : public UActorComponent
@@ -44,6 +45,12 @@ public:
     // 현재 활성화된 무기를 가져옴
     UFUNCTION(BlueprintCallable, Category = "Weapon")
     inline AWeaponBase* GetActivateWeapon() { return ActivatedWeapon; }
+
+    UFUNCTION(BlueprintPure, Category = "Weapon")
+    UWeaponDataAsset* GetMainWeaponData() const;
+
+    UFUNCTION(BlueprintPure, Category = "Weapon")
+    UWeaponDataAsset* GetSubWeaponData() const;
 
 protected:
 	// Called when the game starts

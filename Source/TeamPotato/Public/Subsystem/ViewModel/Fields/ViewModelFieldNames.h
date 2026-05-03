@@ -19,3 +19,27 @@ namespace PlayerResourceVMFields
     TEAMPOTATO_API extern const FName WalkSpeed;
     TEAMPOTATO_API extern const FName AttackPower;
 }
+
+namespace WeaponVMFields
+{
+    TEAMPOTATO_API extern const FName MainWeaponData;
+    TEAMPOTATO_API extern const FName SubWeaponData;
+}
+
+namespace PerkVMFields
+{
+    TEAMPOTATO_API extern const FName EquippedPerks;
+}
+
+namespace EnemyVMFields
+{
+    TEAMPOTATO_API extern const FName CurrentHealth;
+    TEAMPOTATO_API extern const FName MaxHealth;
+    TEAMPOTATO_API extern const FName HealthPercent;
+    TEAMPOTATO_API extern const FName IsVisible;
+}
+
+namespace MinimapVMFields
+{
+    TEAMPOTATO_API extern const FName IsInitialized;
+}

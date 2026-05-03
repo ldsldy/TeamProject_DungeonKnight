@@ -2,7 +2,6 @@
 
 
 #include "Enemy/BossBase.h"
-#include "UI/MainHUD.h"
 #include "Subsystem/MVVMSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,19 +23,22 @@ void ABossBase::BeginPlay()
         Subsystem->RegisterBossActor(this);
     }
     
-    AMainHUD* MainHUD = Cast<AMainHUD>(GetWorld()->GetFirstPlayerController()->GetHUD());
-    if (MainHUD)
-    {
-        OnBossSpawn.AddDynamic(MainHUD, &AMainHUD::TryShowBossWidget);
-        OnBossDie.AddDynamic(MainHUD, &AMainHUD::TryHideBossWidget);
-    }
-
     if (OnBossSpawn.IsBound())
     {
         OnBossSpawn.Broadcast();
     }
 
     OnBossHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+}
+
+void ABossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    if (UMVVMSubsystem* Subsystem = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UMVVMSubsystem>())
+    {
+        Subsystem->UnregisterBossActor(this);
+    }
+
+    Super::EndPlay(EndPlayReason);
 }
 
 float ABossBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

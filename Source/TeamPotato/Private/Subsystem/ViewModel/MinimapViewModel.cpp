@@ -2,10 +2,40 @@
 
 
 #include "Subsystem/ViewModel/MinimapViewModel.h"
+#include "Subsystem/ViewModel/Fields/ViewModelFieldNames.h"
+#include "TeamPotato/Logic/DungeonGanarator.h"
 #include "UI/Minimap/MinimapManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
-// --- 맵 생성시에 미니맵 캡처 요청 함수 ---
+void UMinimapViewModel::Initialize(UObject* InModel)
+{
+    Deinitialize();
+
+    Super::Initialize(InModel);
+
+    Model = Cast<ADungeonGanarator>(InModel);
+    if (!Model)
+    {
+        return;
+    }
+
+    Model->OnDungeonGenerationCompleted.AddDynamic(this, &UMinimapViewModel::RequestMinimapCapture);
+}
+
+void UMinimapViewModel::Deinitialize()
+{
+    if (Model)
+    {
+        Model->OnDungeonGenerationCompleted.RemoveDynamic(this, &UMinimapViewModel::RequestMinimapCapture);
+        Model = nullptr;
+    }
+
+    MinimapManager = nullptr;
+    SetAndNotify(bIsInitialized, false, MinimapVMFields::IsInitialized);
+
+    Super::Deinitialize();
+}
+
 void UMinimapViewModel::RequestMinimapCapture(FVector2D InMinPoint, FVector2D InMaxPoint)
 {
     LastCaptureMinPoint = InMinPoint;
@@ -28,7 +58,6 @@ void UMinimapViewModel::ReplayLastMinimapCaptureRequest()
     OnMinimapCaptureRequested.Broadcast(LastCaptureMinPoint, LastCaptureMaxPoint);
 }
 
-// --- 미니맵 매니저에서 머티리얼의 플레이어 위치 업데이트 함수 ---
 void UMinimapViewModel::UpdatePlayerPosition(const FVector& InWorldLocation, float InYaw)
 {
     if (MinimapManager)
@@ -37,15 +66,15 @@ void UMinimapViewModel::UpdatePlayerPosition(const FVector& InWorldLocation, flo
     }
 }
 
-// --- 위젯에 미니맵 머티리얼 제공을 위한 함수 ---
 void UMinimapViewModel::SetMinimapManager(UMinimapManager* InMinimapManager)
 {
     MinimapManager = InMinimapManager;
-
-    // 초기화 완료 알림
-    if (OnMinimapInitialized.IsBound())
+    if (SetAndNotify(bIsInitialized, MinimapManager != nullptr, MinimapVMFields::IsInitialized))
     {
-        OnMinimapInitialized.Broadcast();
+        if (bIsInitialized && OnMinimapInitialized.IsBound())
+        {
+            OnMinimapInitialized.Broadcast();
+        }
     }
 }
 
@@ -55,5 +84,6 @@ UMaterialInstanceDynamic* UMinimapViewModel::GetMinimapMaterial() const
     {
         return MinimapManager->GetMinimapMaterial();
     }
+
     return nullptr;
 }

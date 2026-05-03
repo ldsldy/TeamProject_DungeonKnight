@@ -3,47 +3,44 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "Data/WeaponDataAsset.h"
+#include "Subsystem/ViewModel/PGViewModelBase.h"
 #include "WeaponViewModel.generated.h"
 
-// --- 위젯에 자원 변경을 알리기 위한 델리게이트 ---
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerResourceUpdate, float, InCurrentResource, float, InMaxResource);
-// --- 위젯에 메인 무기 변경을 알리기 위한 델리게이트 ---
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnMainWeaponUpdate, UWeaponDataAsset*, InDataAsset);
-// --- 위젯에 서브 무기 변경을 알리기 위한 델리게이트 ---
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSubWeaponUpdate, UWeaponDataAsset*, InDataAsset);
-
+class UWeaponComponent;
+class UWeaponDataAsset;
 
 /**
  * 
  */
-UCLASS()
-class TEAMPOTATO_API UWeaponViewModel : public UObject
+UCLASS(Blueprintable)
+class TEAMPOTATO_API UWeaponViewModel : public UPGViewModelBase
 {
-	GENERATED_BODY()
-	
-public:
-    // --- 플레이어의 자원 설정 함수 ---
-    UFUNCTION(BlueprintCallable)
-    void SetResource(float CurrentResource, float MaxResource);
-
-    UFUNCTION(BlueprintCallable)
-    void SetMainWeapon(UWeaponDataAsset* InWeaponData);
-
-    UFUNCTION(BlueprintCallable)
-    void SetSubWeapon(UWeaponDataAsset* InWeaponData);
-
-    UFUNCTION(BlueprintCallable)
-    void SwapMainAndSubWeapon();
+    GENERATED_BODY()
 
 public:
-    // --- 델리게이트 ---
-    FOnPlayerResourceUpdate OnPlayerResourceUpdate;
-    FOnMainWeaponUpdate OnMainWeaponUpdate;
-    FOnSubWeaponUpdate OnSubWeaponUpdate;
+    virtual void Initialize(UObject* InModel) override;
+    virtual void Deinitialize() override;
+
+    UFUNCTION(BlueprintPure)
+    UWeaponDataAsset* GetMainWeaponData() const { return MainWeaponData; }
+
+    UFUNCTION(BlueprintPure)
+    UWeaponDataAsset* GetSubWeaponData() const { return SubWeaponData; }
 
 private:
-    // --- 플레이어의 자원 백분율 ---
-    float ResourcePercent = 1.f;
+    UFUNCTION()
+    void HandleMainWeaponChanged(UWeaponDataAsset* InWeaponData);
+
+    UFUNCTION()
+    void HandleSubWeaponChanged(UWeaponDataAsset* InWeaponData);
+
+private:
+    UPROPERTY()
+    TObjectPtr<UWeaponComponent> Model = nullptr;
+
+    UPROPERTY()
+    UWeaponDataAsset* MainWeaponData = nullptr;
+
+    UPROPERTY()
+    UWeaponDataAsset* SubWeaponData = nullptr;
 };

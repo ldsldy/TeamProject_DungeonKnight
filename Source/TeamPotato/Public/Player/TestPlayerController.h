@@ -5,16 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "InputAction.h"
-#include "UI/BaseLayerWidget.h"
 #include "TestPlayerController.generated.h"
 
 class UInputMappingContext;
-class UBaseLayerWidget;
-class UPerkSelectionScreenWidget;
 class UPlayerKilledWidget;
 class UMinimapWidget;
 class UInGameMenuWidget;
-class UPerkDataAsset;
 class UMinimapViewModel;
 class UUserWidget;
 /**
@@ -29,12 +25,6 @@ public:
     ATestPlayerController();
 
     // 선택창을 뷰포트에 추가
-    UFUNCTION(BlueprintCallable)
-    void AddPerkSelectionScreenToViewport();
-
-    UFUNCTION()
-    void RemovePerkSelectionScreenFromViewport();
-
     UFUNCTION(BlueprintCallable, Category = "Input")
     void SetGameOnlyInputMode();
 
@@ -45,9 +35,6 @@ public:
     void SetGameAndUIInputMode(UUserWidget* FocusWidget = nullptr);
 
     // 스테이지와 챕터 정보를 받아서 원하는 스테이지와 챕터에서 퍽 선택 화면을 띄움
-    UFUNCTION(BlueprintCallable, Category = "Perk|Selection")
-    void TryPerkSelectionScreen(int32 InStage, int32 InChapter);
-
 protected:
     // --- 빙의 시점에 강제로 Input을 GameModeOnly로 바꿈 ---
     virtual void OnPossess(APawn* InPawn) override;
@@ -65,6 +52,9 @@ protected:
     // --- 미니맵 플레이어 위치 업데이트 ---
     UFUNCTION()
     void UpdateMinimapPlayerPosition();
+
+    UFUNCTION()
+    void HandleMinimapViewModelFieldChanged(FName FieldName);
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InputAction")
@@ -109,21 +99,6 @@ private:
     // ===============================
     // --- 퍽 UI 관련 변수 ---
     // ===============================
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
-    TSubclassOf<UPerkSelectionScreenWidget> PerkSelectionScreenClass;
-
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
-    TSubclassOf<UBaseLayerWidget> BaseLayerWidgetClass;
-
-    UPROPERTY(Transient)
-    TObjectPtr<UBaseLayerWidget> BaseLayerWidget = nullptr;
-
-    UPROPERTY(EditDefaultsOnly, Category = "UI|Layer")
-    FLayerWidgetActivationContainer OpenPerkSelectionLayerTags;
-
-    UPROPERTY(EditDefaultsOnly, Category = "UI|Layer")
-    FLayerWidgetActivationContainer ClosePerkSelectionLayerTags;
-
     // ===============================
     // --- 사망 UI 위젯 관련 변수 ---
     // ===============================
