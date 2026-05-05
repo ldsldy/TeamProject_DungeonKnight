@@ -10,6 +10,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMinimapCaptureRequested, FVector
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnMinimapInitialized);
 
 class ADungeonGanarator;
+class APawn;
 class UMaterialInstanceDynamic;
 class UTexture2D;
 class UTextureRenderTarget2D;
@@ -53,6 +54,11 @@ public:
 
 private:
     FVector2D WorldToMinimapUV(const FVector2D& InWorldLocation2D) const;
+    void StartPlayerTracking();
+    void StopPlayerTracking();
+    void CheckPlayerPositionUpdate();
+    void UpdateTrackedPlayerPosition(APawn* TrackedPawn);
+    APawn* GetTrackedPlayerPawn() const;
     void RevealArea(FVector2D UV, float Radius);
     void UpdateFogTexture();
     void ResetMinimap();
@@ -82,7 +88,20 @@ private:
     UPROPERTY()
     bool bIsInitialized = false;
 
+    UPROPERTY(EditDefaultsOnly, Category = "Minimap")
+    float MinimapUpdateInterval = 0.1f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Minimap")
+    float MinimapUpdateThreshold = 10.f;
+
+    UPROPERTY(EditDefaultsOnly, Category = "Minimap")
+    float MinimapYawUpdateThreshold = 5.f;
+
+    FTimerHandle MinimapUpdateTimer;
+    FVector LastPlayerLocation = FVector::ZeroVector;
+    float LastPlayerYaw = 0.f;
     bool bFogDirty = false;
+    bool bHasLastPlayerTransform = false;
     bool bHasLastCaptureBounds = false;
     FVector2D LastCaptureMinPoint = FVector2D::ZeroVector;
     FVector2D LastCaptureMaxPoint = FVector2D::ZeroVector;

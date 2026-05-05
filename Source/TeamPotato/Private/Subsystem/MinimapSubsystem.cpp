@@ -6,8 +6,11 @@
 #include "Common/MyGameSettings.h"
 #include "Engine/Texture2D.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "TeamPotato/Logic/DungeonGanarator.h"
+#include "TimerManager.h"
 
 void UMinimapSubsystem::Deinitialize()
 {
@@ -117,6 +120,12 @@ void UMinimapSubsystem::InitializeMinimap(UTextureRenderTarget2D* InRenderTarget
 
     bIsInitialized = true;
     OnMinimapInitialized.Broadcast();
+
+    StartPlayerTracking();
+    if (APawn* TrackedPawn = GetTrackedPlayerPawn())
+    {
+        UpdateTrackedPlayerPosition(TrackedPawn);
+    }
 }
 
 FVector2D UMinimapSubsystem::WorldToMinimapUV(const FVector2D& InWorldLocation2D) const
@@ -153,6 +162,87 @@ void UMinimapSubsystem::UpdatePlayerPosition(const FVector& InWorldLocation, flo
     MinimapMaterial->SetScalarParameterValue(TEXT("PlayerRotation"), InYaw / 360.f);
 
     RevealArea(PlayerUV, 0.1f);
+}
+
+void UMinimapSubsystem::StartPlayerTracking()
+{
+    UWorld* World = GetWorld();
+    if (!World || World->GetTimerManager().IsTimerActive(MinimapUpdateTimer))
+    {
+        return;
+    }
+
+    World->GetTimerManager().SetTimer(
+        MinimapUpdateTimer,
+        this,
+        &UMinimapSubsystem::CheckPlayerPositionUpdate,
+        MinimapUpdateInterval,
+        true);
+}
+
+void UMinimapSubsystem::StopPlayerTracking()
+{
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(MinimapUpdateTimer);
+    }
+}
+
+void UMinimapSubsystem::CheckPlayerPositionUpdate()
+{
+    if (!bIsInitialized)
+    {
+        return;
+    }
+
+    APawn* TrackedPawn = GetTrackedPlayerPawn();
+    if (!TrackedPawn)
+    {
+        return;
+    }
+
+    const FVector CurrentPlayerLocation = TrackedPawn->GetActorLocation();
+    const float CurrentPlayerYaw = TrackedPawn->GetActorRotation().Yaw;
+
+    if (bHasLastPlayerTransform)
+    {
+        const float DistanceMoved = FVector::DistSquared(CurrentPlayerLocation, LastPlayerLocation);
+        const float YawDifference = FMath::Abs(FMath::FindDeltaAngleDegrees(CurrentPlayerYaw, LastPlayerYaw));
+
+        if (DistanceMoved < MinimapUpdateThreshold * MinimapUpdateThreshold &&
+            YawDifference < MinimapYawUpdateThreshold)
+        {
+            return;
+        }
+    }
+
+    UpdateTrackedPlayerPosition(TrackedPawn);
+}
+
+void UMinimapSubsystem::UpdateTrackedPlayerPosition(APawn* TrackedPawn)
+{
+    if (!TrackedPawn)
+    {
+        return;
+    }
+
+    LastPlayerLocation = TrackedPawn->GetActorLocation();
+    LastPlayerYaw = TrackedPawn->GetActorRotation().Yaw;
+    bHasLastPlayerTransform = true;
+
+    UpdatePlayerPosition(LastPlayerLocation, LastPlayerYaw);
+}
+
+APawn* UMinimapSubsystem::GetTrackedPlayerPawn() const
+{
+    const UWorld* World = GetWorld();
+    if (!World)
+    {
+        return nullptr;
+    }
+
+    const APlayerController* PlayerController = World->GetFirstPlayerController();
+    return PlayerController ? PlayerController->GetPawn() : nullptr;
 }
 
 void UMinimapSubsystem::RevealArea(FVector2D UV, float Radius)
@@ -203,12 +293,16 @@ void UMinimapSubsystem::UpdateFogTexture()
 
 void UMinimapSubsystem::ResetMinimap()
 {
+    StopPlayerTracking();
     MinimapMaterial = nullptr;
     FogTexture = nullptr;
     FogData.Reset();
     WorldMinPoint = FVector2D::ZeroVector;
     OrthoWidth = 0.f;
     bFogDirty = false;
+    bHasLastPlayerTransform = false;
+    LastPlayerLocation = FVector::ZeroVector;
+    LastPlayerYaw = 0.f;
     bIsInitialized = false;
     bHasLastCaptureBounds = false;
     LastCaptureMinPoint = FVector2D::ZeroVector;
