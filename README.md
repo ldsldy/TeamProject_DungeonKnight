@@ -66,12 +66,6 @@
 - 변경된 옵션 값을 저장해 재실행 이후에도 설정 유지
 - 관련 구현: [AudioSubsystem](./Source/TeamPotato/Private/Subsystem/AudioSubsystem.cpp), [SaveGameSubsystem](./Source/TeamPotato/Private/Subsystem/SaveGameSubsystem.cpp), [SaveSettings](./Source/TeamPotato/Public/Subsystem/Save/SaveSettings.h), [MainMenuSoundOptionWidget](./Source/TeamPotato/Private/UI/MainMenu/MainMenuSoundOptionWidget.cpp)
 
-### 8) AI와 전투 시스템
-- 적 타입별 행동과 공격 패턴을 구성해 던전 전투의 다양성 제공
-- 플레이어 자원과 무기 상태를 컴포넌트로 관리해 전투 로직을 분리
-- 보스, 엘리트, 일반 적 구조를 나누어 전투 콘텐츠 확장
-- 관련 구현: [MyAIController](./Source/TeamPotato/Private/AI/MyAIController.cpp), [BTT_DefaultAttack](./Source/TeamPotato/Private/AI/Task/BTT_DefaultAttack.cpp), [EnemyCharacter](./Source/TeamPotato/Private/Enemy/EnemyCharacter.cpp), [WeaponComponent](./Source/TeamPotato/Private/Component/WeaponComponent.cpp), [PlayerResource](./Source/TeamPotato/Private/Component/PlayerResource.cpp)
-
 ## 수행 업무
 
 ### 런타임 던전 연동 시스템 구현
