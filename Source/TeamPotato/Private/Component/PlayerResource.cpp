@@ -150,12 +150,24 @@ void UPlayerResource::AddPower(float InPower)
 
 void UPlayerResource::AddMaxHealth(float InMaxHealth)
 {
-    SetMaxHealth(MaxHealth + InMaxHealth);
+    const float PreviousMaxHealth = MaxHealth;
+    MaxHealth = FMath::Max(MinHealth, MaxHealth + InMaxHealth);
+
+    const float MaxHealthDelta = MaxHealth - PreviousMaxHealth;
+    Health = FMath::Clamp(Health + MaxHealthDelta, 0.0f, MaxHealth);
+
+    BroadcastHealthChanged();
 }
 
 void UPlayerResource::AddMaxEnergy(float InMaxStamina)
 {
-    SetMaxEnergy(MaxEnergy + InMaxStamina);
+    const float PreviousMaxEnergy = MaxEnergy;
+    MaxEnergy = FMath::Max(MinEnergy, MaxEnergy + InMaxStamina);
+
+    const float MaxEnergyDelta = MaxEnergy - PreviousMaxEnergy;
+    Energy = FMath::Clamp(Energy + MaxEnergyDelta, 0.0f, MaxEnergy);
+
+    BroadcastEnergyChanged();
 }
 
 void UPlayerResource::AddWalkSpeed(float InWalkSpeed)

@@ -10,8 +10,12 @@
 
 class ULevelDataAsset;
 class USoundMix;
+class USoundClass;
+class UUserWidget;
 class AEnemyDamagePopupActor;
 class UMinimapWidget;
+class UMaterialInterface;
+class UTexture2D;
 /**
  * 
  */
@@ -53,6 +57,10 @@ public:
     // 로딩 화면 위젯 클래스
     UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "UI")
     TSoftClassPtr<UUserWidget> LoadingWidgetClass;
+
+    // 챕터/게임 클리어 위젯 클래스
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "UI")
+    TSoftClassPtr<UUserWidget> ChapterClearWidgetClass;
 
     // 데미지 팝업 위젯 클래스
     UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "UI|Actor")

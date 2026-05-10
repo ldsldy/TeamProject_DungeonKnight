@@ -156,10 +156,11 @@ void UMinimapSubsystem::UpdatePlayerPosition(const FVector& InWorldLocation, flo
     }
 
     const FVector2D PlayerUV = WorldToMinimapUV(FVector2D(InWorldLocation.X, InWorldLocation.Y));
+    const float PlayerRotation = FRotator::ClampAxis(InYaw + 180.f) / 360.f;
 
     MinimapMaterial->SetScalarParameterValue(TEXT("PlayerPosX"), PlayerUV.X);
     MinimapMaterial->SetScalarParameterValue(TEXT("PlayerPosY"), PlayerUV.Y);
-    MinimapMaterial->SetScalarParameterValue(TEXT("PlayerRotation"), InYaw / 360.f);
+    MinimapMaterial->SetScalarParameterValue(TEXT("PlayerRotation"), PlayerRotation);
 
     RevealArea(PlayerUV, 0.1f);
 }

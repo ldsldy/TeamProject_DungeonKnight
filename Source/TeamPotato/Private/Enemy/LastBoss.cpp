@@ -2,6 +2,7 @@
 
 
 #include "Enemy/LastBoss.h"
+#include "Common/MyGameSettings.h"
 #include "TeamPotato/Room/DungeonRoom9.h"
 #include "Kismet/GameplayStatics.h"
 ALastBoss::ALastBoss()
@@ -19,6 +20,7 @@ void ALastBoss::OnDie()
 {
     Super::OnDie();
 
+    OnGameClear.Broadcast();
     GetWorldTimerManager().SetTimer(VictoryWidgetTimerHandle, this, &ALastBoss::ShowVictoryWidget, 14.0f, false);
 }
 
@@ -30,12 +32,23 @@ float ALastBoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 
 void ALastBoss::ShowVictoryWidget()
 {
-    if (VictoryWidgetClass)
+    TSubclassOf<UUserWidget> WidgetClass = nullptr;
+
+    if (const UMyGameSettings* GameSettings = UMyGameSettings::Get())
     {
-        APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-        if (PC)
+        WidgetClass = GameSettings->ChapterClearWidgetClass.LoadSynchronous();
+    }
+
+    if (!WidgetClass)
+    {
+        WidgetClass = VictoryWidgetClass;
+    }
+
+    if (WidgetClass)
+    {
+        if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
         {
-            VictoryWidget = CreateWidget<UUserWidget>(PC, VictoryWidgetClass);
+            VictoryWidget = CreateWidget<UUserWidget>(PC, WidgetClass);
             if (VictoryWidget)
             {
                 VictoryWidget->AddToViewport();
